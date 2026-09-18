@@ -106,7 +106,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             >
               {lines.heart?.detected && (
                 <path
-                  d={defaultHeartPath}
+                  d={lines.heart.svgPath || defaultHeartPath}
                   fill="none"
                   stroke="#F43F5E"
                   strokeWidth={selectedLine === 'heart' ? '2.8' : '1.8'}
@@ -118,7 +118,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
               {lines.head?.detected && (
                 <path
-                  d={defaultHeadPath}
+                  d={lines.head.svgPath || defaultHeadPath}
                   fill="none"
                   stroke="#38BDF8"
                   strokeWidth={selectedLine === 'head' ? '2.8' : '1.8'}
@@ -130,7 +130,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
               {lines.life?.detected && (
                 <path
-                  d={defaultLifePath}
+                  d={lines.life.svgPath || defaultLifePath}
                   fill="none"
                   stroke="#10B981"
                   strokeWidth={selectedLine === 'life' ? '2.8' : '1.8'}
@@ -142,7 +142,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
               {lines.fate?.detected && (
                 <path
-                  d={defaultFatePath}
+                  d={lines.fate.svgPath || defaultFatePath}
                   fill="none"
                   stroke="#F59E0B"
                   strokeWidth={selectedLine === 'fate' ? '2.6' : '1.6'}

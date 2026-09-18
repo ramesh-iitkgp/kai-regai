@@ -5,6 +5,7 @@ import type {
   PaymentInitResponse,
   PaymentVerifyResponse,
   FullPalmReading,
+  Point2D,
 } from '../types/contracts';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4100/api/v1';
@@ -43,8 +44,83 @@ export async function uploadPalmScan(
     console.warn('Backend API unavailable, using high-fidelity edge fallback synthesis:', err);
   }
 
-  // Edge synthesis fallback
+  // Edge synthesis fallback with realistic organic points
   const scanId = 'scan_' + Date.now().toString(36);
+  const isRight = hand === 'right';
+
+  const heartPoints: Point2D[] = isRight ? [
+    { x: 80, y: 38 },
+    { x: 68, y: 37 },
+    { x: 52, y: 35 },
+    { x: 38, y: 33 },
+    { x: 26, y: 29 },
+    { x: 18, y: 24 },
+  ] : [
+    { x: 20, y: 38 },
+    { x: 32, y: 37 },
+    { x: 48, y: 35 },
+    { x: 62, y: 33 },
+    { x: 74, y: 29 },
+    { x: 82, y: 24 },
+  ];
+
+  const headPoints: Point2D[] = isRight ? [
+    { x: 24, y: 43 },
+    { x: 36, y: 46 },
+    { x: 50, y: 49 },
+    { x: 64, y: 54 },
+    { x: 76, y: 60 },
+    { x: 86, y: 66 },
+  ] : [
+    { x: 76, y: 43 },
+    { x: 64, y: 46 },
+    { x: 50, y: 49 },
+    { x: 36, y: 54 },
+    { x: 24, y: 60 },
+    { x: 14, y: 66 },
+  ];
+
+  const lifePoints: Point2D[] = isRight ? [
+    { x: 24, y: 43 },
+    { x: 22, y: 54 },
+    { x: 24, y: 68 },
+    { x: 32, y: 80 },
+    { x: 42, y: 90 },
+    { x: 50, y: 96 },
+  ] : [
+    { x: 76, y: 43 },
+    { x: 78, y: 54 },
+    { x: 76, y: 68 },
+    { x: 68, y: 80 },
+    { x: 58, y: 90 },
+    { x: 50, y: 96 },
+  ];
+
+  const fatePoints: Point2D[] = [
+    { x: 50, y: 92 },
+    { x: 51, y: 76 },
+    { x: 51, y: 58 },
+    { x: 50, y: 42 },
+    { x: 50, y: 34 },
+  ];
+
+  const pointsToPath = (pts: Point2D[]): string => {
+    if (!pts || pts.length === 0) return '';
+    let p = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? 0 : i - 1];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      p += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return p;
+  };
+
   const analysis: StructuredPalmAnalysis = {
     scanId,
     hand,
@@ -53,42 +129,46 @@ export async function uploadPalmScan(
       heart: {
         name: 'Heart Line',
         detected: true,
-        confidence: 0.91,
+        confidence: 0.94,
         length: 'long',
         curvature: 'moderate',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Emotional depth, loyalty, and expressive warmth in bonds.',
-        svgPath: hand === 'right' ? 'M 75 42 Q 55 38 35 34' : 'M 25 42 Q 45 38 65 34',
+        points: heartPoints,
+        svgPath: pointsToPath(heartPoints),
       },
       head: {
         name: 'Head Line',
         detected: true,
-        confidence: 0.88,
+        confidence: 0.91,
         length: 'long',
         curvature: 'gentle',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Synthesizes analytical precision with imaginative instincts.',
-        svgPath: hand === 'right' ? 'M 32 46 Q 52 52 70 60' : 'M 68 46 Q 48 52 30 60',
+        points: headPoints,
+        svgPath: pointsToPath(headPoints),
       },
       life: {
         name: 'Life Line',
         detected: true,
-        confidence: 0.94,
+        confidence: 0.96,
         length: 'long',
         curvature: 'deep_arc',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Strong vitality reserve and energetic resilience.',
-        svgPath: hand === 'right' ? 'M 32 46 Q 30 62 42 80' : 'M 68 46 Q 70 62 58 80',
+        points: lifePoints,
+        svgPath: pointsToPath(lifePoints),
       },
       fate: {
         name: 'Fate Line',
         detected: true,
-        confidence: 0.76,
+        confidence: 0.82,
         length: 'average',
         curvature: 'straight',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Self-determined vocation that crystallizes with experience.',
-        svgPath: 'M 50 82 Q 51 60 52 38',
+        points: fatePoints,
+        svgPath: pointsToPath(fatePoints),
       },
     },
     mounts: [

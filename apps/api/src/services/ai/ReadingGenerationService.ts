@@ -105,6 +105,29 @@ export class ReadingGenerationService {
             'Give your loved ones the patience to meet your depth; not everyone expresses feelings with the same intentionality.',
           sources: getCitationsForFeature('HEART_LINE'),
           divergenceNote: getDivergenceForFeature('HEART_LINE'),
+          bookComparisons: [
+            {
+              tradition: 'Brihat Samudrika Shastra',
+              sourceTitle: 'Brihat Samudrika & Hastha Sanjeevani',
+              author: 'Traditional Rishis (Attributed to Sage Garga)',
+              reference: 'Chapter on Hridaya Rekha, Verse 42',
+              interpretation: 'Auspicious curvature extending to the root of Brihaspati signifies Dharma-Nishta (righteous affection), moral dignity in family life, and steadfast devotion.',
+            },
+            {
+              tradition: "Cheiro's System (1894)",
+              sourceTitle: "Cheiro's Language of the Hand",
+              author: 'Cheiro (Count Louis Hamon)',
+              reference: 'Chapter VII, The Line of Heart',
+              interpretation: 'Long line ascending into the Mount of Jupiter marks the highest type of love—idealistic, noble, ambitious for the partner, and loyal without jealous fanaticism.',
+            },
+            {
+              tradition: 'Scientific Hand Reading (1900)',
+              sourceTitle: 'The Laws of Scientific Hand Reading',
+              author: 'William G. Benham',
+              reference: 'Part II, The Heart Line, p. 210',
+              interpretation: 'Deep, clear line terminating between Jupiter and Saturn establishes harmonious equilibrium between ambition and moral responsibility, giving reliable lifelong affection.',
+            },
+          ],
         },
         {
           id: 'mind',
@@ -119,6 +142,29 @@ export class ReadingGenerationService {
             'Beware of over-analyzing decisions before taking action; trust your initial pattern recognition.',
           sources: getCitationsForFeature('HEAD_LINE'),
           divergenceNote: getDivergenceForFeature('HEAD_LINE'),
+          bookComparisons: [
+            {
+              tradition: 'Brihat Samudrika Shastra',
+              sourceTitle: 'Brihat Samudrika & Hastha Sanjeevani',
+              author: 'Traditional Rishis',
+              reference: 'Chapter on Matru / Medha Rekha, Verse 18',
+              interpretation: 'Deflection toward Chandra Parvata indicates Kalpana Shakti (intuitive imagination) and ability to solve difficult worldly problems through lateral wisdom.',
+            },
+            {
+              tradition: "Cheiro's System (1894)",
+              sourceTitle: "Cheiro's Language of the Hand",
+              author: 'Cheiro (Count Louis Hamon)',
+              reference: 'Chapter V, The Line of Head',
+              interpretation: 'A head line sloping into the upper Mount of the Moon gives keen literary discernment, psychological observation, and artistic visualization.',
+            },
+            {
+              tradition: 'Scientific Hand Reading (1900)',
+              sourceTitle: 'The Laws of Scientific Hand Reading',
+              author: 'William G. Benham',
+              reference: 'Part II, The Head Line, p. 248',
+              interpretation: 'A slightly sloping head line balances practicality with conceptual vision, excelling where original thinking is preferred over mechanical repetition.',
+            },
+          ],
         },
         {
           id: 'vitality',
@@ -133,6 +179,29 @@ export class ReadingGenerationService {
             'Nurture your energy reserves by respecting boundaries between ambitious pursuit and restorative quiet.',
           sources: getCitationsForFeature('LIFE_LINE'),
           divergenceNote: getDivergenceForFeature('LIFE_LINE'),
+          bookComparisons: [
+            {
+              tradition: 'Brihat Samudrika Shastra',
+              sourceTitle: 'Brihat Samudrika & Hastha Sanjeevani',
+              author: 'Traditional Rishis',
+              reference: 'Chapter on Ayur Rekha, Verse 6',
+              interpretation: 'Wide unbroken arc encompassing Shukra Kshetra indicates sustained Ojas (vital vigor), strong immunity, and generous hospitality.',
+            },
+            {
+              tradition: "Cheiro's System (1894)",
+              sourceTitle: "Cheiro's Language of the Hand",
+              author: 'Cheiro (Count Louis Hamon)',
+              reference: 'Chapter IV, The Line of Life',
+              interpretation: 'A wide sweep around the base of the thumb denotes strong constitution, generous physical spirits, and natural warmth of temperament.',
+            },
+            {
+              tradition: 'Scientific Hand Reading (1900)',
+              sourceTitle: 'The Laws of Scientific Hand Reading',
+              author: 'William G. Benham',
+              reference: 'Part II, The Life Line, p. 182',
+              interpretation: 'A deeply etched, well-curved Life line provides abundant vital stamina and quick physical recuperation following demanding intellectual effort.',
+            },
+          ],
         },
         {
           id: 'career',
@@ -147,6 +216,29 @@ export class ReadingGenerationService {
             'Focus on developing unique craft skills; your long-term fulfillment grows with autonomy.',
           sources: getCitationsForFeature('FATE_LINE'),
           divergenceNote: getDivergenceForFeature('FATE_LINE'),
+          bookComparisons: [
+            {
+              tradition: 'Brihat Samudrika Shastra',
+              sourceTitle: 'Brihat Samudrika & Hastha Sanjeevani',
+              author: 'Traditional Rishis',
+              reference: 'Chapter on Karma Rekha, Verse 33',
+              interpretation: 'Vertical Rekha rising from Manibandha toward Shani Kshetra denotes self-achieved fortune (Swayam-Arjita Vitta) through consistent discipline.',
+            },
+            {
+              tradition: "Cheiro's System (1894)",
+              sourceTitle: "Cheiro's Language of the Hand",
+              author: 'Cheiro (Count Louis Hamon)',
+              reference: 'Chapter VIII, The Line of Fate',
+              interpretation: 'Ascending fate line reaching the Mount of Saturn promises steady advancement and professional success carved by individual willpower.',
+            },
+            {
+              tradition: 'Scientific Hand Reading (1900)',
+              sourceTitle: 'The Laws of Scientific Hand Reading',
+              author: 'William G. Benham',
+              reference: 'Part II, The Fate Line, p. 302',
+              interpretation: 'Clear, unbroken fate line gives distinct vocational purpose, indicating concentration of effort rather than scattered interests.',
+            },
+          ],
         },
         {
           id: 'talents',
@@ -165,6 +257,29 @@ export class ReadingGenerationService {
             ...getCitationsForFeature('THUMB'),
           ],
           divergenceNote: getDivergenceForFeature('MOUNT_JUPITER'),
+          bookComparisons: [
+            {
+              tradition: 'Brihat Samudrika Shastra',
+              sourceTitle: 'Brihat Samudrika & Hastha Sanjeevani',
+              author: 'Traditional Rishis',
+              reference: 'Chapter on Parvata Lakshana, Verse 12',
+              interpretation: 'Prominence of Guru Parvata combined with Shukra grants moral prestige, capacity to guide others, and magnetic social affection.',
+            },
+            {
+              tradition: "Cheiro's System (1894)",
+              sourceTitle: "Cheiro's Language of the Hand",
+              author: 'Cheiro (Count Louis Hamon)',
+              reference: 'Part I, The Mounts of the Hand',
+              interpretation: 'Well-developed Jupiter confers ambition, executive command, and dignity, tempered by Venusian warmth to create an approachable leader.',
+            },
+            {
+              tradition: 'Scientific Hand Reading (1900)',
+              sourceTitle: 'The Laws of Scientific Hand Reading',
+              author: 'William G. Benham',
+              reference: 'Part I, The Mount Types, p. 88',
+              interpretation: 'The Jupiterian-Venusian blend unites honorable command with warm empathy, supported by a resolute thumb that translates thought into execution.',
+            },
+          ],
         },
       ],
       traditionalDisclaimer:

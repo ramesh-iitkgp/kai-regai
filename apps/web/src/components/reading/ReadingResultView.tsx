@@ -758,6 +758,33 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                         </p>
                       </div>
 
+                      {section.bookComparisons && section.bookComparisons.length > 0 && (
+                        <div style={{ marginTop: '10px', marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#FBBF24', display: 'block' }}>
+                            ⚖️ Comparative Analysis Across 3 Foundational Books:
+                          </span>
+                          {section.bookComparisons.map((comp, cIdx) => (
+                            <div
+                              key={cIdx}
+                              style={{
+                                backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                                border: '1px solid rgba(167, 139, 250, 0.25)',
+                                borderRadius: '6px',
+                                padding: '8px 10px',
+                                fontSize: '11.5px',
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+                                <strong style={{ color: '#DDD6FE' }}>{comp.tradition}</strong>
+                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic' }}>{comp.reference}</span>
+                              </div>
+                              <p style={{ color: 'var(--text-secondary)', margin: 0 }}>"{comp.interpretation}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

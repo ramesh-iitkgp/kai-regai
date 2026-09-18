@@ -128,12 +128,13 @@ export function App() {
       setScanId(result.scanId);
       setAnalysis(result.analysis);
       logAnalyticsEvent('analysis_completed', { scanId: result.scanId });
-      // Direct jump to critical conversion screen: Free Preview
-      setCurrentStep('free_preview');
     } catch (err) {
       console.error('Analysis error:', err);
-      setCurrentStep('free_preview');
     }
+  };
+
+  const handleScanAnimationComplete = () => {
+    setCurrentStep('free_preview');
   };
 
   const handleUnlockPayment = async (method: string) => {
@@ -315,8 +316,9 @@ export function App() {
             {currentStep === 'analyzing' && (
               <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <LoadingScan
-                  status="Reading your palm…"
+                  status="Deliberate Shastra Palm Analysis…"
                   palmThumbnailUrl={capturedImageDataUrl || undefined}
+                  onComplete={handleScanAnimationComplete}
                 />
               </div>
             )}

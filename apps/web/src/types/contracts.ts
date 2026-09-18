@@ -14,6 +14,11 @@ export type LineCurvature = 'straight' | 'gentle' | 'moderate' | 'deep_arc';
 export type LineLength = 'short' | 'average' | 'long' | 'extends_across';
 export type LineContinuity = 'continuous' | 'partially_broken' | 'chained' | 'forked';
 
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
 export interface PalmLineFeature {
   name: string;
   detected: boolean;
@@ -23,6 +28,7 @@ export interface PalmLineFeature {
   continuity: LineContinuity;
   traditionalMeaningSummary: string;
   svgPath?: string; // Normalized coordinates SVG path
+  points?: Point2D[];
 }
 
 export interface MountFeature {
@@ -80,6 +86,14 @@ export interface SectionSourceCitation {
   excerpt: string;
 }
 
+export interface BookComparison {
+  tradition: string;      // 'Samudrika Shastra' | 'Cheiro (1894)' | 'Benham (1900)'
+  sourceTitle: string;
+  author: string;
+  reference: string;
+  interpretation: string;
+}
+
 export interface ReadingCardSection {
   id: string;
   title: string;
@@ -89,6 +103,7 @@ export interface ReadingCardSection {
   traditionalInterpretation: string;
   reflectiveAdvice: string;
   sources?: SectionSourceCitation[];
+  bookComparisons?: BookComparison[];
   divergenceNote?: string;
 }
 
