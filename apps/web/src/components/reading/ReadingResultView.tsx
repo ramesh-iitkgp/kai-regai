@@ -27,6 +27,7 @@ import { SourceCitationModal } from '../modals/SourceCitationModal';
 import { useLanguage } from '../../context/LanguageContext';
 import { ReadingHistoryService } from '../../services/ReadingHistoryService';
 import { PROMOTIONAL_APP_URL } from './ShareCardModal';
+import { shareReportCardToWhatsApp } from '../../services/shareCardService';
 
 export interface ReadingResultViewProps {
   reading: FullPalmReading;
@@ -64,6 +65,31 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
   const [selectedCitationSection, setSelectedCitationSection] = useState<ReadingCardSection | null>(null);
   const [highlightedLine, setHighlightedLine] = useState<string | null>('heart');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isDirectSharing, setIsDirectSharing] = useState(false);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+
+  const handleOneClickWhatsAppShare = async () => {
+    setIsDirectSharing(true);
+    setShareNotice(null);
+    try {
+      const res = await shareReportCardToWhatsApp({
+        reading,
+        displayName: currentName || userName,
+        imageDataUrl,
+        siteUrl: PROMOTIONAL_APP_URL,
+      });
+
+      if (res.success) {
+        setShareNotice(res.message);
+        setTimeout(() => setShareNotice(null), 4000);
+      }
+    } catch (err) {
+      console.warn('1-click WhatsApp share error:', err);
+      onShare();
+    } finally {
+      setIsDirectSharing(false);
+    }
+  };
 
   useEffect(() => {
     if (externalInspectCrease) {
@@ -547,11 +573,29 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
 
           {/* Primary Action Buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+            {shareNotice && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: 'rgba(37, 211, 102, 0.15)',
+                  border: '1px solid rgba(37, 211, 102, 0.4)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#25D366',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                }}
+              >
+                {shareNotice}
+              </div>
+            )}
+
             <Button
               variant="primary"
               size="lg"
               fullWidth
-              onClick={onShare}
+              onClick={handleOneClickWhatsAppShare}
+              disabled={isDirectSharing}
               leftIcon={<Share2 size={18} />}
               style={{
                 background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
@@ -561,8 +605,25 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                 fontSize: '15px',
               }}
             >
-              Share Report Card on WhatsApp
+              {isDirectSharing ? '⚡ Opening WhatsApp...' : 'Share Report Card on WhatsApp (1-Click)'}
             </Button>
+
+            <button
+              onClick={onShare}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-lavender)',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'center',
+                padding: '2px 0 6px 0',
+                textDecoration: 'underline',
+              }}
+            >
+              🎨 Preview Visual Card / Download PDF & Options
+            </button>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
               {onOpenAskKai && (
