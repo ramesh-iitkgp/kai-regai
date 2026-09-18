@@ -175,12 +175,12 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
     : 'M 12 38 C 28 37, 52 34, 68 30 C 76 28, 82 24, 88 20';
 
   const defaultHeadPath = isRight
-    ? 'M 20 42 C 36 46, 56 50, 76 56 C 82 58, 88 62, 92 66'
-    : 'M 80 42 C 64 46, 44 50, 24 56 C 18 58, 12 62, 8 66';
+    ? 'M 24 35 C 38 37, 56 40, 74 43 C 80 44, 85 45, 88 46'
+    : 'M 76 35 C 62 37, 44 40, 26 43 C 20 44, 15 45, 12 46';
 
   const defaultLifePath = isRight
-    ? 'M 20 42 C 26 55, 29 70, 32 82 C 34 88, 38 94, 42 96'
-    : 'M 80 42 C 74 55, 71 70, 68 82 C 66 88, 62 94, 58 96';
+    ? 'M 24 35 C 28 44, 30 56, 29 70 C 28 80, 25 88, 22 95'
+    : 'M 76 35 C 72 44, 70 56, 71 70 C 72 80, 75 88, 78 95';
 
   const defaultFatePath = 'M 50 92 C 50.5 74, 50.5 54, 50 32';
 

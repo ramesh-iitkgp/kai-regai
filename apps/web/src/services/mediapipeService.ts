@@ -134,18 +134,10 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   };
   const knuckleDist = Math.hypot(vecKnuckles.x, vecKnuckles.y) || 1;
   const uUlnar = { x: vecKnuckles.x / knuckleDist, y: vecKnuckles.y / knuckleDist };
-  const uRadial = { x: -uUlnar.x, y: -uUlnar.y };
-
   // Outer skin percussion (ulnar border below pinky extends beyond skeletal knuckle)
   const ulnarSkin = {
     x: uUlnar.x * knuckleDist * 0.18,
     y: uUlnar.y * knuckleDist * 0.18,
-  };
-
-  // Radial skin fold (between index and thumb knuckles)
-  const radialSkin = {
-    x: uRadial.x * knuckleDist * 0.10,
-    y: uRadial.y * knuckleDist * 0.10,
   };
 
   // Palm base width across wrist heel
@@ -155,12 +147,6 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
     y: wrist.y + uUlnar.y * knuckleDist * 0.50,
   };
 
-  // The true anatomical origin for Head and Life lines in the index-thumb radial skin web fold
-  const webOriginRaw = lerp(indexMcp, thumbMcp, 0.42);
-  const webOrigin: Point2D = {
-    x: Math.round((webOriginRaw.x + radialSkin.x) * 10) / 10,
-    y: Math.round((webOriginRaw.y + radialSkin.y) * 10) / 10,
-  };
 
   // 1. Heart Line (Hridaya Rekha) — Distal transverse crease
   // Covers the whole width: starts on outer ulnar percussion edge, traverses below pinky, ring, middle,
@@ -180,31 +166,34 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   ];
 
   // 2. Head Line (Matru Rekha) — Proximal transverse crease
-  // Covers the whole width: starts at radial web fold, crosses mid-palm diagonally,
-  // and reaches all the way across to the hypothenar margin (Mount of Moon).
-  const headHypothenarEdge: Point2D = {
-    x: Math.round((lerp(pinkyMcp, wristUlnar, 0.68).x + ulnarSkin.x * 0.65) * 10) / 10,
-    y: Math.round((lerp(pinkyMcp, wristUlnar, 0.68).y + ulnarSkin.y * 0.65) * 10) / 10,
+  // Runs in upper-mid palm, starting under index knuckle base and traversing across toward mid-percussion
+  const headOrigin: Point2D = {
+    x: Math.round(lerp(indexMcp, wristRadial, 0.24).x * 10) / 10,
+    y: Math.round(lerp(indexMcp, wristRadial, 0.24).y * 10) / 10,
+  };
+
+  const headPercussionEdge: Point2D = {
+    x: Math.round((lerp(pinkyMcp, wristUlnar, 0.46).x + ulnarSkin.x * 0.40) * 10) / 10,
+    y: Math.round((lerp(pinkyMcp, wristUlnar, 0.46).y + ulnarSkin.y * 0.40) * 10) / 10,
   };
 
   const headLine: Point2D[] = [
-    webOrigin,
-    lerp(indexMcp, wristRadial, 0.36),
-    lerp(middleMcp, lerp(wristRadial, wristUlnar, 0.46), 0.50),
-    lerp(ringMcp, lerp(wristRadial, wristUlnar, 0.72), 0.58),
-    lerp(pinkyMcp, wristUlnar, 0.62),
-    headHypothenarEdge,
+    headOrigin,
+    lerp(lerp(indexMcp, middleMcp, 0.30), lerp(wristRadial, wristUlnar, 0.30), 0.32),
+    lerp(middleMcp, lerp(wristRadial, wristUlnar, 0.48), 0.38),
+    lerp(ringMcp, lerp(wristRadial, wristUlnar, 0.72), 0.44),
+    headPercussionEdge,
   ];
 
   // 3. Life Line (Ayur Rekha) — Thenar crease
-  // Hugs the entire Thenar Eminence (Mount of Venus) wrapping tightly around the thumb base to the wrist
+  // Starts beside the head line and cleanly contours around Mount of Venus (thenar eminence) on the palm
   const lifeLine: Point2D[] = [
-    webOrigin,
-    lerp(lerp(webOrigin, thumbMcp, 0.45), indexMcp, 0.08),
-    lerp(thumbMcp, lerp(middleMcp, wrist, 0.38), 0.24),
-    lerp(lerp(thumbMcp, thumbCmc, 0.52), lerp(wrist, middleMcp, 0.45), 0.20),
-    lerp(thumbCmc, wrist, 0.32),
-    lerp(wrist, thumbCmc, 0.55),
+    headOrigin,
+    lerp(lerp(indexMcp, middleMcp, 0.08), wristRadial, 0.38),
+    lerp(lerp(indexMcp, middleMcp, 0.16), wristRadial, 0.54),
+    lerp(lerp(indexMcp, middleMcp, 0.12), wristRadial, 0.72),
+    lerp(lerp(indexMcp, middleMcp, 0.06), wristRadial, 0.88),
+    wristRadial,
   ];
 
   // 4. Fate Line (Karma Rekha) — Vertical median crease
@@ -249,7 +238,7 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
 export function snapPointsToCreaseValleys(
   imageSource: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
   points: Point2D[],
-  searchRadiusPercent = 2.5
+  searchRadiusPercent = 1.6
 ): Point2D[] {
   if (typeof document === 'undefined' || !points || points.length < 2) {
     return points;
