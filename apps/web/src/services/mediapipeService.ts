@@ -126,10 +126,24 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   const isRight = thumbMcp.x < pinkyMcp.x;
   const handedness = isRight ? 'right' : 'left';
 
-  // Helper to interpolate an anatomical palm coordinate:
+  // Define the base width of the palm across the wrist heel:
+  // Radial side: toward thumb base (thenar eminence)
+  const wristRadial = lerp(wrist, thumbCmc, 0.55);
+  // Ulnar side: toward hypothenar eminence (outer wrist below pinky)
+  const knuckleTransVector = {
+    x: pinkyMcp.x - indexMcp.x,
+    y: pinkyMcp.y - indexMcp.y,
+  };
+  const wristUlnar = {
+    x: wrist.x + knuckleTransVector.x * 0.35,
+    y: wrist.y + knuckleTransVector.y * 0.35,
+  };
+
+  // Anatomical quadrilateral palm interpolator:
   // uLong: 0 = wrist base, 1 = knuckle arch (distal palm boundary)
   // uTrans: 0 = index knuckle (radial), 1 = pinky knuckle (ulnar)
   const getPalmPoint = (uLong: number, uTrans: number): Point2D => {
+    // Knuckle position along the upper arch
     let knucklePt: Point2D;
     if (uTrans <= 0.33) {
       knucklePt = lerp(indexMcp, middleMcp, uTrans / 0.33);
@@ -138,43 +152,47 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
     } else {
       knucklePt = lerp(ringMcp, pinkyMcp, Math.min(1.0, (uTrans - 0.66) / 0.34));
     }
-    return lerp(wrist, knucklePt, uLong);
+
+    // Wrist base position along the lower heel
+    const basePt = lerp(wristRadial, wristUlnar, uTrans);
+
+    return lerp(basePt, knucklePt, uLong);
   };
 
   // 1. Heart Line (Hridaya Rekha) — Distal transverse crease
   // Starts on the ulnar percussion edge below pinky, curves across upper palm toward index knuckle
   const heartLine: Point2D[] = [
-    getPalmPoint(0.74, 1.0),
-    getPalmPoint(0.70, 0.72),
-    getPalmPoint(0.67, 0.42),
-    getPalmPoint(0.73, 0.18),
-    getPalmPoint(0.80, 0.10),
+    getPalmPoint(0.72, 1.0),
+    getPalmPoint(0.68, 0.70),
+    getPalmPoint(0.65, 0.40),
+    getPalmPoint(0.72, 0.18),
+    getPalmPoint(0.80, 0.08),
   ];
 
   // 2. Head Line (Matru Rekha) — Proximal transverse crease
   // Starts at radial edge between index & thumb, traverses diagonally across mid-palm
   const headLine: Point2D[] = [
-    getPalmPoint(0.66, 0.05),
-    getPalmPoint(0.58, 0.28),
-    getPalmPoint(0.50, 0.55),
-    getPalmPoint(0.44, 0.85),
+    getPalmPoint(0.64, 0.04),
+    getPalmPoint(0.55, 0.28),
+    getPalmPoint(0.48, 0.58),
+    getPalmPoint(0.42, 0.88),
   ];
 
   // 3. Life Line (Ayur Rekha) — Thenar crease
   // Arcs smoothly around the Mount of Venus (thumb base) towards the wrist
   const lifeLine: Point2D[] = [
-    getPalmPoint(0.65, 0.05),
-    getPalmPoint(0.52, 0.18),
-    getPalmPoint(0.36, 0.22),
-    getPalmPoint(0.20, 0.16),
-    getPalmPoint(0.08, 0.08),
+    getPalmPoint(0.64, 0.05),
+    getPalmPoint(0.50, 0.18),
+    getPalmPoint(0.34, 0.22),
+    getPalmPoint(0.18, 0.15),
+    getPalmPoint(0.06, 0.05),
   ];
 
   // 4. Fate Line (Karma Rekha) — Vertical median crease
   // Ascends vertically from wrist up the palm center toward Mount of Saturn (middle knuckle)
   const fateLine: Point2D[] = [
-    getPalmPoint(0.12, 0.48),
-    getPalmPoint(0.38, 0.46),
+    getPalmPoint(0.10, 0.48),
+    getPalmPoint(0.35, 0.46),
     getPalmPoint(0.58, 0.42),
     getPalmPoint(0.78, 0.38),
   ];

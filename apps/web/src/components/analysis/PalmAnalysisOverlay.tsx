@@ -65,6 +65,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const [offsetY, setOffsetY] = useState(0);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [lineThickness, setLineThickness] = useState<number>(0.75);
 
   const { lines, handArchetype, hand } = analysis;
   const isRight = hand === 'right';
@@ -207,16 +208,16 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             >
               <defs>
                 <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#F43F5E" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#F43F5E" />
                 </filter>
                 <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#38BDF8" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#38BDF8" />
                 </filter>
                 <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#10B981" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#10B981" />
                 </filter>
                 <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#F59E0B" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#F59E0B" />
                 </filter>
               </defs>
 
@@ -230,11 +231,11 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     d={dynamicCreases?.heartLine || lines.heart.svgPath || defaultHeartPath}
                     fill="none"
                     stroke="#F43F5E"
-                    strokeWidth={selectedLine === 'heart' ? '3.4' : '1.8'}
+                    strokeWidth={selectedLine === 'heart' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'heart' ? 'url(#glow-rose)' : undefined}
                     style={{
-                      opacity: selectedLine ? (selectedLine === 'heart' ? 1 : 0.22) : 0.85,
+                      opacity: selectedLine ? (selectedLine === 'heart' ? 1 : 0.25) : 0.88,
                       transition: 'all 0.35s ease',
                     }}
                   />
@@ -245,11 +246,11 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     d={dynamicCreases?.headLine || lines.head.svgPath || defaultHeadPath}
                     fill="none"
                     stroke="#38BDF8"
-                    strokeWidth={selectedLine === 'head' ? '3.4' : '1.8'}
+                    strokeWidth={selectedLine === 'head' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'head' ? 'url(#glow-cyan)' : undefined}
                     style={{
-                      opacity: selectedLine ? (selectedLine === 'head' ? 1 : 0.22) : 0.85,
+                      opacity: selectedLine ? (selectedLine === 'head' ? 1 : 0.25) : 0.88,
                       transition: 'all 0.35s ease',
                     }}
                   />
@@ -260,11 +261,11 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     d={dynamicCreases?.lifeLine || lines.life.svgPath || defaultLifePath}
                     fill="none"
                     stroke="#10B981"
-                    strokeWidth={selectedLine === 'life' ? '3.4' : '1.8'}
+                    strokeWidth={selectedLine === 'life' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'life' ? 'url(#glow-green)' : undefined}
                     style={{
-                      opacity: selectedLine ? (selectedLine === 'life' ? 1 : 0.22) : 0.85,
+                      opacity: selectedLine ? (selectedLine === 'life' ? 1 : 0.25) : 0.88,
                       transition: 'all 0.35s ease',
                     }}
                   />
@@ -275,12 +276,12 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     d={dynamicCreases?.fateLine || lines.fate.svgPath || defaultFatePath}
                     fill="none"
                     stroke="#F59E0B"
-                    strokeWidth={selectedLine === 'fate' ? '3.2' : '1.6'}
+                    strokeWidth={selectedLine === 'fate' ? (lineThickness * 1.5).toFixed(2) : (lineThickness * 0.9).toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'fate' ? 'url(#glow-gold)' : undefined}
                     strokeDasharray={selectedLine === 'fate' ? undefined : '2 1'}
                     style={{
-                      opacity: selectedLine ? (selectedLine === 'fate' ? 1 : 0.22) : 0.85,
+                      opacity: selectedLine ? (selectedLine === 'fate' ? 1 : 0.25) : 0.88,
                       transition: 'all 0.35s ease',
                     }}
                   />
@@ -577,6 +578,22 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                 max="45"
                 value={rotation}
                 onChange={(e) => setRotation(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
+              />
+            </div>
+            {/* Line Thickness */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
+                <span>Line Thickness (Delicate Crease)</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{lineThickness.toFixed(2)}px</span>
+              </div>
+              <input
+                type="range"
+                min="0.30"
+                max="1.50"
+                step="0.05"
+                value={lineThickness}
+                onChange={(e) => setLineThickness(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
               />
             </div>
