@@ -404,53 +404,72 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
 
           {/* 4 Crunch Pillar Cards (2x2 Grid) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {pillars.map((pillar) => (
-              <div
-                key={pillar.id}
-                style={{
-                  backgroundColor: 'var(--bg-surface)',
-                  borderRadius: '12px',
-                  border: `1.5px solid ${pillar.color}`,
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: `0 4px 14px ${pillar.color}15`,
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 800, color: pillar.color, margin: 0 }}>
-                      {pillar.englishName}
-                    </h4>
-                    <span
-                      style={{
-                        fontSize: '10.5px',
-                        fontWeight: 800,
-                        color: '#FFFFFF',
-                        backgroundColor: `${pillar.color}33`,
-                        padding: '1px 6px',
-                        borderRadius: '6px',
-                      }}
-                    >
-                      {pillar.score}%
+            {pillars.map((pillar) => {
+              const lineTarget =
+                pillar.id === 'love' ? 'heart' :
+                pillar.id === 'mind' ? 'head' :
+                pillar.id === 'health' ? 'life' : 'fate';
+
+              return (
+                <div
+                  key={pillar.id}
+                  onClick={() => {
+                    setHighlightedLine(lineTarget);
+                    setActiveTab('palm');
+                  }}
+                  title="Tap to inspect this crease on your palm photo"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    borderRadius: '12px',
+                    border: `1.5px solid ${pillar.color}`,
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: `0 4px 14px ${pillar.color}15`,
+                    cursor: 'pointer',
+                    transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <h4 style={{ fontSize: '13px', fontWeight: 800, color: pillar.color, margin: 0 }}>
+                        {pillar.englishName}
+                      </h4>
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 800,
+                          color: '#FFFFFF',
+                          backgroundColor: `${pillar.color}33`,
+                          padding: '1px 6px',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        {pillar.score}%
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>
+                      {pillar.traditionalName}
+                    </div>
+
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 6px', fontWeight: 500 }}>
+                      {pillar.verdict}
+                    </p>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '6px', fontSize: '10px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                      <strong style={{ color: 'var(--text-secondary)' }}>Indicator:</strong> {pillar.keyIndicator}
+                    </span>
+                    <span style={{ fontSize: '9.5px', color: pillar.color, fontWeight: 800, flexShrink: 0 }}>
+                      🔍 Inspect
                     </span>
                   </div>
-
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>
-                    {pillar.traditionalName}
-                  </div>
-
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-primary)', lineHeight: 1.4, margin: '0 0 6px', fontWeight: 500 }}>
-                    {pillar.verdict}
-                  </p>
                 </div>
-
-                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
-                  <strong style={{ color: 'var(--text-secondary)' }}>Indicator:</strong> {pillar.keyIndicator}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Auspicious Yog & Guidance Box */}
@@ -591,42 +610,12 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
             </span>
           </div>
 
-          {/* Line Chips */}
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none' }}>
-            {[
-              { id: 'heart', label: 'Heart Line', color: '#F43F5E' },
-              { id: 'head', label: 'Head Line', color: '#38BDF8' },
-              { id: 'life', label: 'Life Line', color: '#10B981' },
-              { id: 'fate', label: 'Fate Line', color: '#F59E0B' },
-            ].map((chip) => {
-              const isSelected = highlightedLine === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  onClick={() => setHighlightedLine(isSelected ? null : chip.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius-full)',
-                    border: isSelected ? `1.5px solid ${chip.color}` : '1px solid var(--border-subtle)',
-                    backgroundColor: isSelected ? 'var(--bg-surface-elevated)' : 'var(--bg-surface)',
-                    color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    fontSize: '12px',
-                    fontWeight: isSelected ? 700 : 500,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: chip.color }} />
-                  <span>{chip.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <PalmAnalysisOverlay imageDataUrl={imageDataUrl} analysis={analysis} />
+          <PalmAnalysisOverlay
+            imageDataUrl={imageDataUrl}
+            analysis={analysis}
+            activeLine={highlightedLine}
+            onSelectLine={setHighlightedLine}
+          />
 
           <div style={{ marginTop: '14px' }}>
             <Button
@@ -719,6 +708,51 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                         lineHeight: 1.5,
                       }}
                     >
+                      {/* Interactive Crease Focus Link */}
+                      {(() => {
+                        const sectionLineName =
+                          section.id === 'love' ? 'Heart Line (Hridaya)' :
+                          section.id === 'mind' ? 'Head Line (Matru)' :
+                          section.id === 'vitality' ? 'Life Line (Ayur)' :
+                          section.id === 'career' ? 'Fate Line (Bhagya)' : 'Mounts & Marks';
+
+                        const targetLine =
+                          section.id === 'love' ? 'heart' :
+                          section.id === 'mind' ? 'head' :
+                          section.id === 'vitality' ? 'life' :
+                          section.id === 'career' ? 'fate' : 'head';
+
+                        return (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              Feature: <strong style={{ color: 'var(--text-primary)' }}>{sectionLineName}</strong>
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHighlightedLine(targetLine);
+                                setActiveTab('palm');
+                              }}
+                              style={{
+                                background: 'rgba(124, 58, 237, 0.15)',
+                                border: '1px solid rgba(167, 139, 250, 0.35)',
+                                borderRadius: 'var(--radius-full)',
+                                color: '#DDD6FE',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '4px 10px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <span>🔍 Inspect on Palm Photo</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
+
                       <div
                         style={{
                           padding: '8px 10px',

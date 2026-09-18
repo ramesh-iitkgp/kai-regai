@@ -7,18 +7,33 @@ import { HAND_CONNECTIONS, detectHandFromUrl } from '../../services/mediapipeSer
 export interface PalmAnalysisOverlayProps {
   imageDataUrl: string;
   analysis: StructuredPalmAnalysis;
+  activeLine?: string | null;
+  onSelectLine?: (line: string | null) => void;
+  autoZoom?: boolean;
 }
 
 export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   imageDataUrl,
   analysis,
+  activeLine,
+  onSelectLine,
+  autoZoom = true,
 }) => {
   const [showOverlays, setShowOverlays] = useState(true);
-  const [selectedLine, setSelectedLine] = useState<string | null>('heart');
+  const [internalSelectedLine, setInternalSelectedLine] = useState<string | null>('heart');
   const [showCalibrate, setShowCalibrate] = useState(false);
   const [enhanceCreases, setEnhanceCreases] = useState(false);
   const [showMesh, setShowMesh] = useState(false);
   const [landmarks, setLandmarks] = useState<Point2D[] | null>(analysis.landmarks || null);
+
+  // Controlled or uncontrolled line selection
+  const selectedLine = activeLine !== undefined ? activeLine : internalSelectedLine;
+  const handleSelectLine = (line: string | null) => {
+    setInternalSelectedLine(line);
+    if (onSelectLine) {
+      onSelectLine(line);
+    }
+  };
 
   useEffect(() => {
     if (!landmarks && imageDataUrl) {
@@ -39,6 +54,35 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const { lines, handArchetype, hand } = analysis;
   const isRight = hand === 'right';
 
+  // Dynamic focal zoom for active line
+  let focalX = 0;
+  let focalY = 0;
+  let focalScale = 1.0;
+
+  if (autoZoom && selectedLine) {
+    if (selectedLine === 'heart') {
+      focalScale = 1.32;
+      focalY = 12;
+      focalX = isRight ? -4 : 4;
+    } else if (selectedLine === 'head') {
+      focalScale = 1.28;
+      focalY = 3;
+      focalX = 0;
+    } else if (selectedLine === 'life') {
+      focalScale = 1.34;
+      focalY = -8;
+      focalX = isRight ? 8 : -8;
+    } else if (selectedLine === 'fate') {
+      focalScale = 1.25;
+      focalY = 0;
+      focalX = 0;
+    }
+  }
+
+  const netScale = scale * focalScale;
+  const netX = offsetX * 0.2 + focalX;
+  const netY = offsetY * 0.2 + focalY;
+
   // Anatomically accurate, organic palmistry paths
   const defaultHeartPath = isRight
     ? 'M 80 38 C 65 37, 48 35, 34 32 C 27 30, 22 27, 18 24'
@@ -55,7 +99,44 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const defaultFatePath = 'M 50 92 C 51 74, 51 54, 50 34';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} id="palm-visualizer-container">
+      {/* Quick Crease Focus Selector Chips */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+        {[
+          { id: null, label: '✨ Full Hand', color: 'var(--accent-lavender)' },
+          { id: 'heart', label: '💖 Heart', color: '#F43F5E' },
+          { id: 'head', label: '🧠 Head', color: '#38BDF8' },
+          { id: 'life', label: '🌿 Life', color: '#10B981' },
+          { id: 'fate', label: '⭐ Fate', color: '#F59E0B' },
+        ].map((chip) => {
+          const isSelected = selectedLine === chip.id;
+          return (
+            <button
+              key={chip.id || 'all'}
+              onClick={() => handleSelectLine(chip.id)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '999px',
+                fontSize: '11px',
+                fontWeight: 700,
+                border: isSelected ? `1.5px solid ${chip.color}` : '1px solid var(--border-subtle)',
+                backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.6)',
+                color: isSelected ? '#FFFFFF' : 'var(--text-muted)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: chip.color }} />
+              <span>{chip.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Palm Visualizer Card with Interactive SVG Overlays */}
       <div
         style={{
@@ -67,142 +148,236 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
           backgroundColor: '#000',
-          border: '2px solid rgba(245, 158, 11, 0.4)',
+          border: selectedLine ? '2px solid var(--accent-violet)' : '2px solid rgba(245, 158, 11, 0.4)',
           boxShadow: 'var(--shadow-gold)',
+          transition: 'border-color 0.3s ease',
         }}
       >
-        <img
-          src={imageDataUrl}
-          alt="Analyzed Palm"
+        {/* Dynamic Zoom & Pan Wrapper for Pixel-Perfect Synchronized Alignment */}
+        <div
           style={{
+            position: 'relative',
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
-            opacity: 0.9,
-            filter: enhanceCreases
-              ? 'contrast(1.6) brightness(0.9) saturate(0.8)'
-              : 'none',
-            transition: 'filter 0.3s ease',
+            transform: `scale(${netScale}) translate(${netX}%, ${netY}%)`,
+            transformOrigin: '50% 50%',
+            transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
-        />
-
-        {showOverlays && (
-          <svg
-            viewBox="0 0 100 100"
+        >
+          <img
+            src={imageDataUrl}
+            alt="Analyzed Palm"
             style={{
-              position: 'absolute',
-              inset: 0,
               width: '100%',
               height: '100%',
-              pointerEvents: 'none',
+              objectFit: 'cover',
+              opacity: 0.9,
+              filter: enhanceCreases
+                ? 'contrast(1.6) brightness(0.9) saturate(0.8)'
+                : 'none',
+              transition: 'filter 0.3s ease',
+            }}
+          />
+
+          {showOverlays && (
+            <svg
+              viewBox="0 0 100 100"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            >
+              <defs>
+                <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#F43F5E" />
+                </filter>
+                <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#38BDF8" />
+                </filter>
+                <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#10B981" />
+                </filter>
+                <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#F59E0B" />
+                </filter>
+              </defs>
+
+              {/* Transform group for user/AI calibrated alignment */}
+              <g
+                transform={`translate(${50 + offsetX * 0.2}, ${50 + offsetY * 0.2}) rotate(${rotation}) scale(${scale}) translate(-50, -50)`}
+                style={{ transition: 'transform 0.15s ease-out' }}
+              >
+                {lines.heart?.detected && (
+                  <path
+                    d={lines.heart.svgPath || defaultHeartPath}
+                    fill="none"
+                    stroke="#F43F5E"
+                    strokeWidth={selectedLine === 'heart' ? '3.4' : '1.8'}
+                    strokeLinecap="round"
+                    filter={selectedLine === 'heart' ? 'url(#glow-rose)' : undefined}
+                    style={{
+                      opacity: selectedLine ? (selectedLine === 'heart' ? 1 : 0.22) : 0.85,
+                      transition: 'all 0.35s ease',
+                    }}
+                  />
+                )}
+
+                {lines.head?.detected && (
+                  <path
+                    d={lines.head.svgPath || defaultHeadPath}
+                    fill="none"
+                    stroke="#38BDF8"
+                    strokeWidth={selectedLine === 'head' ? '3.4' : '1.8'}
+                    strokeLinecap="round"
+                    filter={selectedLine === 'head' ? 'url(#glow-cyan)' : undefined}
+                    style={{
+                      opacity: selectedLine ? (selectedLine === 'head' ? 1 : 0.22) : 0.85,
+                      transition: 'all 0.35s ease',
+                    }}
+                  />
+                )}
+
+                {lines.life?.detected && (
+                  <path
+                    d={lines.life.svgPath || defaultLifePath}
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth={selectedLine === 'life' ? '3.4' : '1.8'}
+                    strokeLinecap="round"
+                    filter={selectedLine === 'life' ? 'url(#glow-green)' : undefined}
+                    style={{
+                      opacity: selectedLine ? (selectedLine === 'life' ? 1 : 0.22) : 0.85,
+                      transition: 'all 0.35s ease',
+                    }}
+                  />
+                )}
+
+                {lines.fate?.detected && (
+                  <path
+                    d={lines.fate.svgPath || defaultFatePath}
+                    fill="none"
+                    stroke="#F59E0B"
+                    strokeWidth={selectedLine === 'fate' ? '3.2' : '1.6'}
+                    strokeLinecap="round"
+                    filter={selectedLine === 'fate' ? 'url(#glow-gold)' : undefined}
+                    strokeDasharray={selectedLine === 'fate' ? undefined : '2 1'}
+                    style={{
+                      opacity: selectedLine ? (selectedLine === 'fate' ? 1 : 0.22) : 0.85,
+                      transition: 'all 0.35s ease',
+                    }}
+                  />
+                )}
+
+                {/* MediaPipe Skeletal 21 Landmarks Mesh */}
+                {showMesh && landmarks && landmarks.length >= 21 && (
+                  <g className="mediapipe-mesh">
+                    {/* Bone Connections */}
+                    {HAND_CONNECTIONS.map(([idxA, idxB], i) => {
+                      const pA = landmarks[idxA];
+                      const pB = landmarks[idxB];
+                      if (!pA || !pB) return null;
+                      return (
+                        <line
+                          key={`bone-${i}`}
+                          x1={pA.x}
+                          y1={pA.y}
+                          x2={pB.x}
+                          y2={pB.y}
+                          stroke="#38BDF8"
+                          strokeWidth="0.8"
+                          strokeOpacity="0.75"
+                        />
+                      );
+                    })}
+                    {/* 21 Joint Nodes */}
+                    {landmarks.map((pt, i) => (
+                      <circle
+                        key={`joint-${i}`}
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={i === 0 ? '2.2' : i % 4 === 0 ? '1.8' : '1.2'}
+                        fill={i === 0 ? '#F59E0B' : i % 4 === 0 ? '#10B981' : '#38BDF8'}
+                        stroke="#0F172A"
+                        strokeWidth="0.5"
+                      />
+                    ))}
+                  </g>
+                )}
+              </g>
+            </svg>
+          )}
+        </div>
+
+        {/* Floating Focused Crease Annotation Callout */}
+        {selectedLine && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '10px',
+              left: '10px',
+              right: '10px',
+              backgroundColor: 'rgba(10, 14, 23, 0.9)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.65)',
+              zIndex: 10,
             }}
           >
-            <defs>
-              <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#F43F5E" />
-              </filter>
-              <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#38BDF8" />
-              </filter>
-              <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#10B981" />
-              </filter>
-              <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#F59E0B" />
-              </filter>
-            </defs>
-
-            {/* Transform group for user/AI calibrated alignment */}
-            <g
-              transform={`translate(${50 + offsetX}, ${50 + offsetY}) rotate(${rotation}) scale(${scale}) translate(-50, -50)`}
-              style={{ transition: 'transform 0.15s ease-out' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: '9px',
+                  height: '9px',
+                  borderRadius: '50%',
+                  backgroundColor:
+                    selectedLine === 'heart' ? '#F43F5E' :
+                    selectedLine === 'head' ? '#38BDF8' :
+                    selectedLine === 'life' ? '#10B981' : '#F59E0B',
+                  flexShrink: 0,
+                  boxShadow: '0 0 10px currentColor',
+                }}
+              />
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: '12px', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {selectedLine === 'heart' && 'Hridaya Rekha (Heart Line)'}
+                  {selectedLine === 'head' && 'Matru Rekha (Head Line)'}
+                  {selectedLine === 'life' && 'Ayur Rekha (Life Line)'}
+                  {selectedLine === 'fate' && 'Bhagya Rekha (Fate Line)'}
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {selectedLine === 'heart' && (lines.heart?.traditionalMeaningSummary || 'Emotional depth & bonds')}
+                  {selectedLine === 'head' && (lines.head?.traditionalMeaningSummary || 'Mental focus & lateral insight')}
+                  {selectedLine === 'life' && (lines.life?.traditionalMeaningSummary || 'Vitality reserve & stamina')}
+                  {selectedLine === 'fate' && (lines.fate?.traditionalMeaningSummary || 'Career vocation & purpose')}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => handleSelectLine(null)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                borderRadius: '6px',
+                color: 'var(--accent-lavender)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '4px 8px',
+                flexShrink: 0,
+                marginLeft: '8px',
+              }}
             >
-              {lines.heart?.detected && (
-                <path
-                  d={lines.heart.svgPath || defaultHeartPath}
-                  fill="none"
-                  stroke="#F43F5E"
-                  strokeWidth={selectedLine === 'heart' ? '2.8' : '1.8'}
-                  strokeLinecap="round"
-                  filter="url(#glow-rose)"
-                  style={{ transition: 'all 0.3s ease' }}
-                />
-              )}
-
-              {lines.head?.detected && (
-                <path
-                  d={lines.head.svgPath || defaultHeadPath}
-                  fill="none"
-                  stroke="#38BDF8"
-                  strokeWidth={selectedLine === 'head' ? '2.8' : '1.8'}
-                  strokeLinecap="round"
-                  filter="url(#glow-cyan)"
-                  style={{ transition: 'all 0.3s ease' }}
-                />
-              )}
-
-              {lines.life?.detected && (
-                <path
-                  d={lines.life.svgPath || defaultLifePath}
-                  fill="none"
-                  stroke="#10B981"
-                  strokeWidth={selectedLine === 'life' ? '2.8' : '1.8'}
-                  strokeLinecap="round"
-                  filter="url(#glow-green)"
-                  style={{ transition: 'all 0.3s ease' }}
-                />
-              )}
-
-              {lines.fate?.detected && (
-                <path
-                  d={lines.fate.svgPath || defaultFatePath}
-                  fill="none"
-                  stroke="#F59E0B"
-                  strokeWidth={selectedLine === 'fate' ? '2.6' : '1.6'}
-                  strokeLinecap="round"
-                  filter="url(#glow-gold)"
-                  strokeDasharray="2 1"
-                  style={{ transition: 'all 0.3s ease' }}
-                />
-              )}
-
-              {/* MediaPipe Skeletal 21 Landmarks Mesh */}
-              {showMesh && landmarks && landmarks.length >= 21 && (
-                <g className="mediapipe-mesh">
-                  {/* Bone Connections */}
-                  {HAND_CONNECTIONS.map(([idxA, idxB], i) => {
-                    const pA = landmarks[idxA];
-                    const pB = landmarks[idxB];
-                    if (!pA || !pB) return null;
-                    return (
-                      <line
-                        key={`bone-${i}`}
-                        x1={pA.x}
-                        y1={pA.y}
-                        x2={pB.x}
-                        y2={pB.y}
-                        stroke="#38BDF8"
-                        strokeWidth="0.8"
-                        strokeOpacity="0.75"
-                      />
-                    );
-                  })}
-                  {/* 21 Joint Nodes */}
-                  {landmarks.map((pt, i) => (
-                    <circle
-                      key={`joint-${i}`}
-                      cx={pt.x}
-                      cy={pt.y}
-                      r={i === 0 ? '2.2' : i % 4 === 0 ? '1.8' : '1.2'}
-                      fill={i === 0 ? '#F59E0B' : i % 4 === 0 ? '#10B981' : '#38BDF8'}
-                      stroke="#0F172A"
-                      strokeWidth="0.5"
-                    />
-                  ))}
-                </g>
-              )}
-            </g>
-          </svg>
+              Reset ↺
+            </button>
+          </div>
         )}
 
         {/* Top Control Pills */}
@@ -463,7 +638,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           ].map((item) => (
             <div
               key={item.id}
-              onClick={() => setSelectedLine(item.id)}
+              onClick={() => handleSelectLine(item.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
