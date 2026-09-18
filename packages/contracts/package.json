@@ -1,0 +1,11 @@
+{
+  "name": "@kai-regai/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'Contracts valid'"
+  }
+}

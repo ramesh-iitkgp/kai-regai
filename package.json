@@ -1,0 +1,15 @@
+{
+  "name": "kai-regai",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=web",
+    "dev:api": "npm run dev --workspace=api",
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspaces"
+  }
+}
