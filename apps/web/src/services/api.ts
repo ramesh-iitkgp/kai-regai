@@ -20,11 +20,23 @@ export function getOrCreateSessionId(): string {
   return sessionId;
 }
 
+import { detectHandFromUrl } from './mediapipeService';
+
 export async function uploadPalmScan(
   imageBlob: Blob,
   hand: HandType,
   quality: ImageQualityResult
 ): Promise<{ scanId: string; analysis: StructuredPalmAnalysis }> {
+  // Pre-process image with MediaPipe on-device 21 landmark detector
+  let mediaPipeResult: Awaited<ReturnType<typeof detectHandFromUrl>> = null;
+  try {
+    const tempUrl = URL.createObjectURL(imageBlob);
+    mediaPipeResult = await detectHandFromUrl(tempUrl);
+    URL.revokeObjectURL(tempUrl);
+  } catch (mpErr) {
+    console.warn('MediaPipe client-side detection fallback:', mpErr);
+  }
+
   try {
     const formData = new FormData();
     formData.append('image', imageBlob, 'palm.jpg');
@@ -38,7 +50,12 @@ export async function uploadPalmScan(
     });
 
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (mediaPipeResult?.landmarks) {
+        data.analysis.landmarks = mediaPipeResult.landmarks;
+        data.analysis.palmBoundary = mediaPipeResult.svgPaths.palmOutline;
+      }
+      return data;
     }
   } catch (err) {
     console.warn('Backend API unavailable, using high-fidelity edge fallback synthesis:', err);
@@ -46,7 +63,8 @@ export async function uploadPalmScan(
 
   // Edge synthesis fallback with realistic organic points
   const scanId = 'scan_' + Date.now().toString(36);
-  const isRight = hand === 'right';
+  const detectedHand = mediaPipeResult?.handedness || hand;
+  const isRight = detectedHand === 'right';
 
   const heartPoints: Point2D[] = isRight ? [
     { x: 80, y: 38 },
@@ -134,8 +152,8 @@ export async function uploadPalmScan(
         curvature: 'moderate',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Emotional depth, loyalty, and expressive warmth in bonds.',
-        points: heartPoints,
-        svgPath: pointsToPath(heartPoints),
+        points: mediaPipeResult?.creases.heartLine || heartPoints,
+        svgPath: mediaPipeResult?.svgPaths.heartLine || pointsToPath(heartPoints),
       },
       head: {
         name: 'Head Line',
@@ -145,8 +163,8 @@ export async function uploadPalmScan(
         curvature: 'gentle',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Synthesizes analytical precision with imaginative instincts.',
-        points: headPoints,
-        svgPath: pointsToPath(headPoints),
+        points: mediaPipeResult?.creases.headLine || headPoints,
+        svgPath: mediaPipeResult?.svgPaths.headLine || pointsToPath(headPoints),
       },
       life: {
         name: 'Life Line',
@@ -156,8 +174,8 @@ export async function uploadPalmScan(
         curvature: 'deep_arc',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Strong vitality reserve and energetic resilience.',
-        points: lifePoints,
-        svgPath: pointsToPath(lifePoints),
+        points: mediaPipeResult?.creases.lifeLine || lifePoints,
+        svgPath: mediaPipeResult?.svgPaths.lifeLine || pointsToPath(lifePoints),
       },
       fate: {
         name: 'Fate Line',
@@ -167,8 +185,8 @@ export async function uploadPalmScan(
         curvature: 'straight',
         continuity: 'continuous',
         traditionalMeaningSummary: 'Self-determined vocation that crystallizes with experience.',
-        points: fatePoints,
-        svgPath: pointsToPath(fatePoints),
+        points: mediaPipeResult?.creases.fateLine || fatePoints,
+        svgPath: mediaPipeResult?.svgPaths.fateLine || pointsToPath(fatePoints),
       },
     },
     mounts: [
@@ -178,6 +196,8 @@ export async function uploadPalmScan(
     ],
     handArchetype: 'Fire Hand',
     detectedTags: ['Intuitive Thinker', 'High Vitality', 'Emotionally Warm', 'Vocation Driven'],
+    landmarks: mediaPipeResult?.landmarks,
+    palmBoundary: mediaPipeResult?.svgPaths.palmOutline,
   };
 
   return { scanId, analysis };

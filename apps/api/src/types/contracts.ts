@@ -51,6 +51,8 @@ export interface StructuredPalmAnalysis {
   mounts: MountFeature[];
   handArchetype: 'Earth Hand' | 'Air Hand' | 'Fire Hand' | 'Water Hand';
   detectedTags: string[];
+  landmarks?: Point2D[];
+  palmBoundary?: string;
 }
 
 export interface PaymentInitResponse {

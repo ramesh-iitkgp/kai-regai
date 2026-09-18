@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import type { StructuredPalmAnalysis } from '../../types/contracts';
+import React, { useState, useEffect } from 'react';
+import type { StructuredPalmAnalysis, Point2D } from '../../types/contracts';
 import { Eye, EyeOff, Sparkles, Heart, Brain, Compass } from 'lucide-react';
 import { Badge } from '../ui/Badge';
+import { HAND_CONNECTIONS, detectHandFromUrl } from '../../services/mediapipeService';
 
 export interface PalmAnalysisOverlayProps {
   imageDataUrl: string;
@@ -16,6 +17,18 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const [selectedLine, setSelectedLine] = useState<string | null>('heart');
   const [showCalibrate, setShowCalibrate] = useState(false);
   const [enhanceCreases, setEnhanceCreases] = useState(false);
+  const [showMesh, setShowMesh] = useState(false);
+  const [landmarks, setLandmarks] = useState<Point2D[] | null>(analysis.landmarks || null);
+
+  useEffect(() => {
+    if (!landmarks && imageDataUrl) {
+      detectHandFromUrl(imageDataUrl).then((res) => {
+        if (res?.landmarks) {
+          setLandmarks(res.landmarks);
+        }
+      });
+    }
+  }, [imageDataUrl, landmarks]);
 
   // Alignment calibration offsets
   const [offsetX, setOffsetX] = useState(0);
@@ -152,12 +165,68 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                   style={{ transition: 'all 0.3s ease' }}
                 />
               )}
+
+              {/* MediaPipe Skeletal 21 Landmarks Mesh */}
+              {showMesh && landmarks && landmarks.length >= 21 && (
+                <g className="mediapipe-mesh">
+                  {/* Bone Connections */}
+                  {HAND_CONNECTIONS.map(([idxA, idxB], i) => {
+                    const pA = landmarks[idxA];
+                    const pB = landmarks[idxB];
+                    if (!pA || !pB) return null;
+                    return (
+                      <line
+                        key={`bone-${i}`}
+                        x1={pA.x}
+                        y1={pA.y}
+                        x2={pB.x}
+                        y2={pB.y}
+                        stroke="#38BDF8"
+                        strokeWidth="0.8"
+                        strokeOpacity="0.75"
+                      />
+                    );
+                  })}
+                  {/* 21 Joint Nodes */}
+                  {landmarks.map((pt, i) => (
+                    <circle
+                      key={`joint-${i}`}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={i === 0 ? '2.2' : i % 4 === 0 ? '1.8' : '1.2'}
+                      fill={i === 0 ? '#F59E0B' : i % 4 === 0 ? '#10B981' : '#38BDF8'}
+                      stroke="#0F172A"
+                      strokeWidth="0.5"
+                    />
+                  ))}
+                </g>
+              )}
             </g>
           </svg>
         )}
 
         {/* Top Control Pills */}
         <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '6px' }}>
+          {landmarks && (
+            <button
+              onClick={() => setShowMesh(!showMesh)}
+              title="Toggle MediaPipe 21-joint skeletal mesh"
+              style={{
+                background: showMesh ? 'rgba(56, 189, 248, 0.9)' : 'rgba(8, 11, 17, 0.75)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-full)',
+                padding: '4px 8px',
+                color: showMesh ? '#020617' : '#38BDF8',
+                fontWeight: showMesh ? 700 : 500,
+                fontSize: '11px',
+                cursor: 'pointer',
+              }}
+            >
+              {showMesh ? '🦴 21 Joints On' : '🤖 MediaPipe'}
+            </button>
+          )}
+
           <button
             onClick={() => setEnhanceCreases(!enhanceCreases)}
             title="Enhance palm crease contrast"
@@ -196,10 +265,28 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           </button>
         </div>
 
-        <div style={{ position: 'absolute', bottom: '12px', left: '12px' }}>
+        <div style={{ position: 'absolute', bottom: '12px', left: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           <Badge variant="gold" icon={<Sparkles size={12} />}>
             {handArchetype}
           </Badge>
+          {landmarks && (
+            <span
+              style={{
+                fontSize: '10px',
+                padding: '3px 8px',
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: '999px',
+                color: '#38BDF8',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              ⚡ MediaPipe 21 Landmarks
+            </span>
+          )}
         </div>
       </div>
 
