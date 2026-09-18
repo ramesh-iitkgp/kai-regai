@@ -1,0 +1,10 @@
+{
+  "name": "KAI REGAI",
+  "description": "Discover the story in your hands. Scan your palm and explore a personalized interpretation inspired by traditional palmistry.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

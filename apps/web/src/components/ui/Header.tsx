@@ -48,39 +48,40 @@ export const Header: React.FC<HeaderProps> = ({
             width: '34px',
             height: '34px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, #F59E0B 0%, #B45309 100%)',
+            background: 'linear-gradient(135deg, #7C3AED 0%, #6366F1 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#080B11',
+            color: '#FFFFFF',
             fontWeight: 800,
             fontSize: '18px',
-            boxShadow: '0 2px 10px rgba(245, 158, 11, 0.3)',
+            boxShadow: '0 2px 10px rgba(124, 58, 237, 0.35)',
           }}
         >
           கை
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-              Kai RegAI
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>
+              KAI REGAI
             </span>
             <span
               style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: 'var(--accent-cyan)',
-                background: 'rgba(56, 189, 248, 0.12)',
+                fontSize: '9px',
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                color: 'var(--accent-lavender-warm)',
+                background: 'rgba(124, 58, 237, 0.15)',
                 padding: '1px 6px',
                 borderRadius: '4px',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
               }}
             >
               AI
             </span>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-            {t('nav.tagline', 'Traditional Palmistry')}
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.01em' }}>
+            Discover the story in your hands.
           </div>
         </div>
       </div>

@@ -4,9 +4,7 @@ import { validatePalmImageQuality } from '../../services/CanvasQualityValidator'
 import { compressPalmImage } from '../../services/ImageCompressor';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { ErrorAlert } from '../ui/ErrorAlert';
 import { CheckCircle2, RefreshCw, ArrowRight, Sparkles, Upload } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
 
 export interface ImagePreviewProps {
   imageDataUrl: string;
@@ -21,7 +19,6 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   onRetake,
   onProceed,
 }) => {
-  const { t } = useLanguage();
   const [currentImageData, setCurrentImageData] = useState<string>(imageDataUrl);
   const [isCheckingQuality, setIsCheckingQuality] = useState(true);
   const [qualityResult, setQualityResult] = useState<ImageQualityResult | null>(null);
@@ -81,14 +78,14 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
   const isHandMissing = qualityResult && (!qualityResult.handDetected || qualityResult.aspectScore < 0.4);
 
   return (
-    <div style={{ padding: '20px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ textAlign: 'center', marginBottom: '14px' }}>
-        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-gold-light)', fontWeight: 700 }}>
-          {t('preview.subtitle', 'Step 2 of 3 • Image Quality Check')}
-        </span>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-          {t('preview.title', 'Review Your Palm Capture')}
+    <div style={{ padding: '20px', minHeight: '100vh', display: 'flex', flexDirection: 'column', maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+          Does this look clear?
         </h2>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+          Make sure your major palm lines and creases are clearly visible.
+        </p>
       </div>
 
       {/* Captured Image Display with Framing */}
@@ -101,7 +98,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
           margin: '0 auto',
           borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
-          border: '2px solid var(--border-medium)',
+          border: '1.5px solid var(--border-medium)',
           boxShadow: 'var(--shadow-lg)',
           backgroundColor: '#000',
         }}
@@ -119,26 +116,26 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         {/* Quality status badge overlay */}
         <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
           {isCheckingQuality ? (
-            <Badge variant="subtle">Analyzing...</Badge>
+            <Badge variant="subtle">Checking photo...</Badge>
           ) : qualityResult?.isValid ? (
             <Badge variant="emerald" icon={<CheckCircle2 size={13} />}>
-              Verified
+              Clear View
             </Badge>
           ) : isHandMissing ? (
             <Badge variant="outline" style={{ background: 'rgba(239, 68, 68, 0.25)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.5)' }}>
-              No Palm Detected
+              Palm Not Detected
             </Badge>
           ) : (
-            <Badge variant="outline" style={{ background: 'rgba(245, 158, 11, 0.25)', color: 'var(--accent-gold-light)' }}>
-              Adjustment Needed
+            <Badge variant="outline" style={{ background: 'rgba(245, 158, 11, 0.25)', color: 'var(--accent-amber)' }}>
+              Check Lighting
             </Badge>
           )}
         </div>
 
         {/* Hand indicator pill */}
         <div style={{ position: 'absolute', bottom: '12px', left: '12px' }}>
-          <Badge variant="gold">
-            {hand === 'right' ? t('handSelect.rightTitle') : t('handSelect.leftTitle')}
+          <Badge variant="subtle">
+            {hand === 'right' ? 'Right Palm' : 'Left Palm'}
           </Badge>
         </div>
       </div>
@@ -147,57 +144,45 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
       <div style={{ marginTop: '16px', flex: 1 }}>
         {isCheckingQuality ? (
           <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-            <Sparkles size={18} className="animate-spin" style={{ margin: '0 auto 8px', color: 'var(--accent-gold-light)' }} />
-            {t('loading.step1', 'Detecting palm landmarks and creases...')}
+            <Sparkles size={18} className="animate-spin" style={{ margin: '0 auto 8px', color: 'var(--accent-lavender)' }} />
+            <span>Checking line clarity...</span>
           </div>
         ) : qualityResult && !qualityResult.isValid ? (
-          <ErrorAlert
-            title={isHandMissing ? "Please upload your hand photo or palm photo" : "We couldn't get a clear enough view of your palm"}
-            message={
-              isHandMissing
-                ? "The AI vision system could not find a clear human palm in this image. Please ensure your open hand is facing the camera."
-                : "To give you an accurate and grounded traditional palm reading, our vision system requires clear line visibility."
-            }
-            reasons={qualityResult.warnings}
-            onRetry={onRetake}
-            onSecondaryAction={() => fileInputRef.current?.click()}
-            secondaryActionLabel="Upload Another Photo"
-            retryLabel="Retake Photo with Camera"
-          />
+          <div
+            style={{
+              padding: '16px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+            }}
+          >
+            <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+              We need a clearer view of your palm.
+            </h4>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.45, margin: 0 }}>
+              {isHandMissing
+                ? 'Make sure your entire open palm is facing the camera with fingers spread slightly.'
+                : 'Try moving into brighter light and holding the camera steady so your palm lines are sharp.'}
+            </p>
+          </div>
         ) : (
           <div
             style={{
               backgroundColor: 'rgba(16, 185, 129, 0.08)',
               border: '1px solid rgba(16, 185, 129, 0.25)',
               borderRadius: 'var(--radius-md)',
-              padding: '14px 16px',
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              color: 'var(--accent-emerald)',
+              fontSize: '13px',
+              fontWeight: 600,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-emerald)', fontWeight: 600, fontSize: '14px', marginBottom: '8px' }}>
-              <CheckCircle2 size={18} />
-              <span>Great photo! Open palm verified</span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>Hand Match</span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {Math.round((qualityResult?.aspectScore || 0.9) * 100)}%
-                </span>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>{t('preview.sharpnessLabel', 'Sharpness')}</span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {Math.round((qualityResult?.sharpnessScore || 0.8) * 100)}%
-                </span>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: 'var(--radius-sm)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>{t('preview.lightingLabel', 'Lighting')}</span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {Math.round((qualityResult?.lightingScore || 0.85) * 100)}%
-                </span>
-              </div>
-            </div>
+            <CheckCircle2 size={16} />
+            <span>Palm and major creases clearly visible</span>
           </div>
         )}
       </div>
@@ -212,39 +197,61 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
       />
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-        {qualityResult?.isValid && (
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={handleProceed}
-            disabled={!compressedData}
-            rightIcon={<ArrowRight size={18} />}
-          >
-            {t('preview.analyzeBtn', 'Analyze Palm Lines')}
-          </Button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
+        {qualityResult?.isValid ? (
+          <>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={handleProceed}
+              disabled={!compressedData}
+              rightIcon={<ArrowRight size={18} />}
+            >
+              ANALYZE MY PALM
+            </Button>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={onRetake}
+                leftIcon={<RefreshCw size={16} />}
+              >
+                RETAKE
+              </Button>
+
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => fileInputRef.current?.click()}
+                leftIcon={<Upload size={16} />}
+              >
+                USE ANOTHER PHOTO
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={onRetake}
+              leftIcon={<RefreshCw size={16} />}
+            >
+              RETAKE
+            </Button>
+
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => fileInputRef.current?.click()}
+              leftIcon={<Upload size={16} />}
+            >
+              USE ANOTHER PHOTO
+            </Button>
+          </div>
         )}
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <Button
-            variant="outline"
-            fullWidth
-            onClick={onRetake}
-            leftIcon={<RefreshCw size={16} />}
-          >
-            {t('preview.retakeBtn', 'Retake')}
-          </Button>
-
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => fileInputRef.current?.click()}
-            leftIcon={<Upload size={16} />}
-          >
-            {t('scanner.uploadPhoto', 'Upload Other')}
-          </Button>
-        </div>
       </div>
     </div>
   );

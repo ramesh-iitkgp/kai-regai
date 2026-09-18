@@ -92,6 +92,26 @@ export interface ReadingCardSection {
   divergenceNote?: string;
 }
 
+export interface PalmCrunchPillar {
+  id: 'wealth' | 'love' | 'mind' | 'health';
+  traditionalName: string; // e.g. "Dhana & Bhagya (धन एवं भाग्य)"
+  englishName: string;     // e.g. "Wealth & Career"
+  score: number;           // e.g. 92
+  ratingLabel: string;     // e.g. "Very Favorable (उत्तम)"
+  verdict: string;         // e.g. "Strong financial independence with compounding gains post-28."
+  keyIndicator: string;    // e.g. "Clear ascending Fate line toward Saturn Mount"
+  color: string;
+}
+
+export interface AuspiciousSignals {
+  specialYog: string;        // e.g. "Gajakesari Influence & Trishul Mark"
+  specialYogMeaning: string; // e.g. "Sign of leadership prestige and moral authority in career"
+  luckyDay: string;          // e.g. "Thursday (गुरुवार)"
+  auspiciousColor: string;   // e.g. "Royal Gold & Deep Saffron"
+  luckyGemstone: string;     // e.g. "Yellow Sapphire (पुखराज) or Pearl"
+  guidingMantra: string;     // e.g. "Action backed by patience yields enduring prosperity."
+}
+
 export interface FullPalmReading {
   readingId: string;
   scanId: string;
@@ -102,6 +122,8 @@ export interface FullPalmReading {
   summaryBadges: string[];
   sections: ReadingCardSection[];
   traditionalDisclaimer: string;
+  crunchPillars?: PalmCrunchPillar[];
+  auspiciousSignals?: AuspiciousSignals;
   shareCard: {
     title: string;
     headline: string;

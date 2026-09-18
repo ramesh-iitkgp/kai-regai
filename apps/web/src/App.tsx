@@ -20,7 +20,7 @@ import { FirstAccessModal } from './components/modals/FirstAccessModal';
 import { LanguageSuggestionBanner } from './components/ui/LanguageSuggestionBanner';
 
 // Flow Screens
-import { WelcomeScreen } from './components/landing/WelcomeScreen';
+import { LandingPage } from './components/landing/LandingPage';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { HandSelection } from './components/camera/HandSelection';
 import { PalmCamera } from './components/camera/PalmCamera';
@@ -187,7 +187,6 @@ export function App() {
 
   const handlePurgePhoto = () => {
     setCapturedImageDataUrl(null);
-    alert('Your palm photograph has been securely erased from active device memory.');
   };
 
   // Bottom Nav Selection Controller
@@ -265,10 +264,10 @@ export function App() {
           />
         ) : (
           <>
-            {/* Step 1: Welcome to Kai RegAI */}
+            {/* Step 1: KAI REGAI Landing Page */}
             {currentStep === 'landing' && (
-              <WelcomeScreen
-                onStartScan={handleStartScan}
+              <LandingPage
+                onStartScan={() => setCurrentStep('hand_select')}
                 onOpenDisclaimer={() => setIsDisclaimerOpen(true)}
                 onOpenPrivacy={() => setIsPrivacyOpen(true)}
               />
@@ -289,7 +288,7 @@ export function App() {
                 selectedHand={selectedHand}
                 onSelectHand={setSelectedHand}
                 onConfirm={handleConfirmHand}
-                onBack={() => setCurrentStep('onboarding')}
+                onBack={() => setCurrentStep('landing')}
               />
             )}
 

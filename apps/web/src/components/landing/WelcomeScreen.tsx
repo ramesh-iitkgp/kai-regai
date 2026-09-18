@@ -16,7 +16,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onOpenDisclaimer,
   onOpenPrivacy,
 }) => {
-  const { currentLanguage, setLanguage, t, formatCurrency } = useLanguage();
+  const { currentLanguage, setLanguage, t } = useLanguage();
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('kai_user_name') || '');
   const [selectedHand, setSelectedHand] = useState<HandType>('right');
 
@@ -257,15 +257,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         onClick={handleBegin}
         style={{
           padding: '16px 24px',
-          fontSize: '16px',
+          fontSize: '15px',
           fontWeight: 800,
-          background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #B45309 100%)',
-          boxShadow: '0 6px 24px rgba(217, 119, 6, 0.45)',
-          border: '1px solid rgba(251, 191, 36, 0.5)',
-          color: '#000',
+          background: 'var(--cta-bg)',
+          boxShadow: 'var(--cta-shadow)',
+          border: '1px solid rgba(196, 181, 253, 0.3)',
+          color: '#FFFFFF',
         }}
       >
-        <span>✋ {t('welcome.startBtn', 'Begin Your Reading')} — {formatCurrency(10)}</span>
+        <span>✋ {t('welcome.startBtn', 'Begin Your Reading')}</span>
         <ArrowRight size={18} style={{ marginLeft: '6px' }} />
       </Button>
 

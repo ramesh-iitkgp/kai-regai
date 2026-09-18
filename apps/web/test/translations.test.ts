@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import { TRANSLATIONS } from '../src/locales/translations.js';
-import { SUPPORTED_LANGUAGES, getAllLanguages, detectSuggestedLanguage } from '../src/types/LanguageRegistry.js';
+import { SUPPORTED_LANGUAGES, getAllLanguages } from '../src/types/LanguageRegistry.js';
 
 test('Web App Translation & Localization Integrity Tests', async (t) => {
   const languageList = getAllLanguages();

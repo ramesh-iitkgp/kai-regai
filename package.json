@@ -10,6 +10,7 @@
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run dev --workspace=api",
     "dev": "npm run dev --workspace=web",
-    "build": "npm run build --workspaces"
+    "lint": "npm run lint --workspace=web",
+    "build": "npm run build --workspace=web && node -e \"require('fs').cpSync('apps/web/dist', 'dist', {recursive: true})\""
   }
 }

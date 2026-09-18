@@ -13,11 +13,10 @@ export const LoadingScan: React.FC<LoadingScanProps> = ({
   palmThumbnailUrl,
 }) => {
   const defaultSteps = [
-    'Mapping hand contour & palm topography',
-    'Tracing Hridaya Rekha (Heart Line)',
-    'Analyzing Shiro Rekha (Head & Mind Line)',
-    'Evaluating Ayur Rekha (Vitality Arc)',
-    'Synthesizing classical Samudrika principles',
+    'Looking at your palm...',
+    'Finding the major lines...',
+    'Mapping your palm...',
+    'Preparing your interpretation...',
   ];
 
   const steps = customSteps || defaultSteps;
@@ -29,7 +28,7 @@ export const LoadingScan: React.FC<LoadingScanProps> = ({
         if (prev < steps.length - 1) return prev + 1;
         return prev;
       });
-    }, 1100);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [steps.length]);
@@ -37,14 +36,12 @@ export const LoadingScan: React.FC<LoadingScanProps> = ({
   // Current active line indicator
   const activeLine =
     completedIndex === 0
-      ? 'Contour Analysis'
+      ? 'Looking at your palm...'
       : completedIndex === 1
-      ? 'Hridaya Rekha (Heart Line)'
+      ? 'Finding the major lines...'
       : completedIndex === 2
-      ? 'Shiro Rekha (Head Line)'
-      : completedIndex === 3
-      ? 'Ayur Rekha (Life Line)'
-      : 'Classical Synthesis';
+      ? 'Mapping your palm...'
+      : 'Preparing your interpretation...';
 
   return (
     <div

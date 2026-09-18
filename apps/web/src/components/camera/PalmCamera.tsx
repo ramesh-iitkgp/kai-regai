@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, ArrowLeft, Camera, Image as ImageIcon, CheckCircle2, XCircle, Sun, Hand, Sparkles } from 'lucide-react';
+import { Upload, ArrowLeft, Camera, Image as ImageIcon, CheckCircle2, Sun, Hand, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { HandType } from '../../types/contracts';
 import { useLanguage } from '../../context/LanguageContext';
@@ -213,11 +213,11 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
         </button>
 
         <div style={{ textAlign: 'center' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#fff' }}>
-            Place your palm inside the guide
+          <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            Let's scan your palm.
           </h3>
-          <span style={{ fontSize: '11px', color: 'var(--accent-lavender)' }}>
-            {hand === 'right' ? 'Right Palm (Active Path)' : 'Left Palm (Innate Potential)'}
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            Place your open palm inside the frame. ({hand === 'right' ? 'Right Palm' : 'Left Palm'})
           </span>
         </div>
 
@@ -513,24 +513,28 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-md)',
                 padding: '14px 16px',
-                fontSize: '12px',
+                fontSize: '13px',
               }}
             >
               <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                Photo Guidelines for Accurate Reading:
+                Instructions for Best Results:
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
                   <CheckCircle2 size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
-                  <span><strong>Full Palm:</strong> Keep all 5 fingers and entire palm flat facing camera</span>
+                  <span>Keep your palm flat</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
                   <CheckCircle2 size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
-                  <span><strong>Good Lighting:</strong> Daylight or bright room lights showing clear palm creases</span>
+                  <span>Use good lighting</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                  <XCircle size={16} color="var(--accent-rose)" style={{ flexShrink: 0 }} />
-                  <span><strong>Avoid:</strong> Half-hand, back of hand, or dark blurry photos</span>
+                  <CheckCircle2 size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
+                  <span>Keep all fingers visible</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                  <CheckCircle2 size={16} color="var(--accent-emerald)" style={{ flexShrink: 0 }} />
+                  <span>Hold camera steady</span>
                 </div>
               </div>
             </div>
@@ -574,20 +578,20 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
               background: 'rgba(255, 255, 255, 0.08)',
               border: '1px solid var(--border-medium)',
               borderRadius: 'var(--radius-full)',
-              color: 'var(--text-secondary)',
+              color: 'var(--text-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 600,
-              padding: '12px 14px',
+              padding: '12px 16px',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
           >
             <Upload size={16} />
-            <span>Upload</span>
+            <span>UPLOAD PHOTO</span>
           </button>
 
           {/* Big Primary Capture Button */}
@@ -597,22 +601,22 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
               flex: 1,
               padding: '14px 18px',
               borderRadius: 'var(--radius-full)',
-              background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 50%, #B45309 100%)',
-              border: '1px solid rgba(251, 191, 36, 0.5)',
-              color: '#000',
+              background: 'var(--cta-bg)',
+              border: '1px solid rgba(196, 181, 253, 0.3)',
+              color: '#FFFFFF',
               fontWeight: 800,
-              fontSize: '15px',
+              fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
               cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(217, 119, 6, 0.45)',
+              boxShadow: 'var(--cta-shadow)',
               transition: 'transform 0.1s ease',
             }}
           >
-            <Camera size={20} />
-            <span>{stream ? 'Capture Palm Photo' : 'Select Palm Photo'}</span>
+            <Camera size={18} />
+            <span>{stream ? 'TAKE PHOTO' : 'OPEN CAMERA'}</span>
           </button>
 
           {/* Test Demo Button for Desktop Testing */}
@@ -635,7 +639,7 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            <Sparkles size={14} color="var(--accent-gold-light)" />
+            <Sparkles size={14} />
             <span>Demo</span>
           </button>
         </div>
