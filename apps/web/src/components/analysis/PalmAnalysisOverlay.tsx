@@ -151,19 +151,19 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
   if (autoZoom && selectedLine) {
     if (selectedLine === 'heart') {
-      focalScale = 1.25;
-      focalY = 8;
-      focalX = isRight ? -3 : 3;
+      focalScale = 1.20;
+      focalY = 6;
+      focalX = 0;
     } else if (selectedLine === 'head') {
-      focalScale = 1.22;
+      focalScale = 1.18;
       focalY = 2;
       focalX = 0;
     } else if (selectedLine === 'life') {
-      focalScale = 1.28;
-      focalY = -5;
-      focalX = isRight ? 5 : -5;
-    } else if (selectedLine === 'fate') {
       focalScale = 1.20;
+      focalY = -3;
+      focalX = 0;
+    } else if (selectedLine === 'fate') {
+      focalScale = 1.16;
       focalY = 0;
       focalX = 0;
     }
@@ -179,8 +179,8 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
     : 'M 76 35 C 62 37, 44 40, 26 43 C 20 44, 15 45, 12 46';
 
   const defaultLifePath = isRight
-    ? 'M 24 35 C 28 44, 30 56, 29 70 C 28 80, 25 88, 22 95'
-    : 'M 76 35 C 72 44, 70 56, 71 70 C 72 80, 75 88, 78 95';
+    ? 'M 26 36 C 31 46, 34 58, 33 72 C 32 82, 29 89, 25 95'
+    : 'M 74 36 C 69 46, 66 58, 67 72 C 68 82, 71 89, 75 95';
 
   const defaultFatePath = 'M 50 92 C 50.5 74, 50.5 54, 50 32';
 

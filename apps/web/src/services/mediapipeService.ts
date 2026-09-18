@@ -186,14 +186,18 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   ];
 
   // 3. Life Line (Ayur Rekha) — Thenar crease
-  // Starts beside the head line and cleanly contours around Mount of Venus (thenar eminence) on the palm
+  // Starts beside the head line and cleanly contours around Mount of Venus (thenar eminence) on the palm,
+  // curving gracefully between the center of the palm and the thumb ball into the wrist heel.
+  const thenarWrist = lerp(wrist, thumbCmc, 0.22);
+  const lifeOrigin = lerp(headOrigin, middleMcp, 0.08);
+
   const lifeLine: Point2D[] = [
-    headOrigin,
-    lerp(lerp(indexMcp, middleMcp, 0.08), wristRadial, 0.38),
-    lerp(lerp(indexMcp, middleMcp, 0.16), wristRadial, 0.54),
-    lerp(lerp(indexMcp, middleMcp, 0.12), wristRadial, 0.72),
-    lerp(lerp(indexMcp, middleMcp, 0.06), wristRadial, 0.88),
-    wristRadial,
+    lifeOrigin,
+    lerp(lerp(indexMcp, middleMcp, 0.16), thenarWrist, 0.36),
+    lerp(lerp(indexMcp, middleMcp, 0.26), thenarWrist, 0.54),
+    lerp(lerp(indexMcp, middleMcp, 0.20), thenarWrist, 0.72),
+    lerp(lerp(indexMcp, middleMcp, 0.10), thenarWrist, 0.88),
+    thenarWrist,
   ];
 
   // 4. Fate Line (Karma Rekha) — Vertical median crease
