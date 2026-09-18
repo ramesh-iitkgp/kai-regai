@@ -69,6 +69,7 @@ export function App() {
   const [isFirstAccessOpen, setIsFirstAccessOpen] = useState<boolean>(false);
   const [shareTargetReading, setShareTargetReading] = useState<FullPalmReading | null>(null);
   const [shareTargetName, setShareTargetName] = useState<string>('');
+  const [shareTargetThumbnailUrl, setShareTargetThumbnailUrl] = useState<string>('');
 
   // Modals & Drawers
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
@@ -251,9 +252,10 @@ export function App() {
             onOpenPrivacy={() => setIsPrivacyOpen(true)}
             onOpenDisclaimer={() => setIsDisclaimerOpen(true)}
             onStartNewScan={handleStartScan}
-            onOpenShareCard={(savedReading, readingName) => {
+            onOpenShareCard={(savedReading, readingName, thumbUrl) => {
               setShareTargetReading(savedReading);
               setShareTargetName(readingName);
+              setShareTargetThumbnailUrl(thumbUrl || '');
               setIsShareModalOpen(true);
             }}
             onSelectSavedReading={(savedReading, thumbUrl) => {
@@ -367,6 +369,7 @@ export function App() {
                   logAnalyticsEvent('reading_shared');
                   setShareTargetReading(reading);
                   setShareTargetName(userName || 'Palm 1');
+                  setShareTargetThumbnailUrl(capturedImageDataUrl || '');
                   setIsShareModalOpen(true);
                 }}
                 onReset={handleResetFlow}
@@ -414,9 +417,11 @@ export function App() {
           onClose={() => {
             setIsShareModalOpen(false);
             setShareTargetReading(null);
+            setShareTargetThumbnailUrl('');
           }}
           reading={shareTargetReading || reading!}
           name={shareTargetName || userName || 'Palm 1'}
+          imageDataUrl={shareTargetThumbnailUrl || capturedImageDataUrl || ''}
         />
       )}
 

@@ -9,6 +9,7 @@ export interface ShareCardModalProps {
   onClose: () => void;
   reading: FullPalmReading;
   name?: string;
+  imageDataUrl?: string;
 }
 
 export const PROMOTIONAL_APP_URL = 'https://ais-pre-apghasc56pzeie2d6fbpgp-752669983581.asia-east1.run.app';
@@ -18,6 +19,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
   onClose,
   reading,
   name,
+  imageDataUrl,
 }) => {
   const [copied, setCopied] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -118,11 +120,11 @@ Scan your palm with AI in 30 seconds for just ₹10!
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Ultra-crisp, publication-ready Canvas Report Card Generator (920 x 1320)
-  const generateCanvas = (): HTMLCanvasElement => {
+  // Ultra-crisp, publication-ready Canvas Report Card Generator (920 x 1400)
+  const generateCanvas = async (): Promise<HTMLCanvasElement> => {
     const canvas = document.createElement('canvas');
     const width = 920;
-    const height = 1320;
+    const height = 1400;
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
@@ -138,7 +140,7 @@ Scan your palm with AI in 30 seconds for just ₹10!
     ctx.fillRect(0, 0, width, height);
 
     // 2. Auspicious Golden Ambient Radial Light at Center
-    const centerGlow = ctx.createRadialGradient(width / 2, 380, 40, width / 2, 380, 450);
+    const centerGlow = ctx.createRadialGradient(width / 2, 400, 40, width / 2, 400, 450);
     centerGlow.addColorStop(0, 'rgba(245, 158, 11, 0.12)');
     centerGlow.addColorStop(0.5, 'rgba(124, 58, 237, 0.1)');
     centerGlow.addColorStop(1, 'transparent');
@@ -157,16 +159,12 @@ Scan your palm with AI in 30 seconds for just ₹10!
     // Traditional Sacred Corner Ornaments
     const corner = 28;
     ctx.fillStyle = '#F59E0B';
-    // Top-left
     ctx.fillRect(24, 24, corner, 5);
     ctx.fillRect(24, 24, 5, corner);
-    // Top-right
     ctx.fillRect(width - 24 - corner, 24, corner, 5);
     ctx.fillRect(width - 29, 24, 5, corner);
-    // Bottom-left
     ctx.fillRect(24, height - 29, corner, 5);
     ctx.fillRect(24, height - 24 - corner, 5, corner);
-    // Bottom-right
     ctx.fillRect(width - 24 - corner, height - 29, corner, 5);
     ctx.fillRect(width - 29, height - 24 - corner, 5, corner);
 
@@ -174,43 +172,78 @@ Scan your palm with AI in 30 seconds for just ₹10!
     ctx.textAlign = 'center';
     ctx.fillStyle = '#FBBF24';
     ctx.font = 'bold 36px -apple-system, sans-serif';
-    ctx.fillText('✋  KAI REGAI  •  हस्तरेखा', width / 2, 95);
+    ctx.fillText('✋  KAI REGAI  •  हस्तरेखा', width / 2, 90);
 
     ctx.fillStyle = '#DDD6FE';
     ctx.font = '700 13px -apple-system, sans-serif';
     ctx.letterSpacing = '3px';
-    ctx.fillText('OFFICIAL AI SAMUDRIKA SHASTRA REPORT CARD', width / 2, 126);
+    ctx.fillText('OFFICIAL AI SAMUDRIKA SHASTRA REPORT CARD', width / 2, 120);
 
     // Decorative Golden Knot Divider
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(180, 146);
-    ctx.lineTo(width - 180, 146);
+    ctx.moveTo(180, 138);
+    ctx.lineTo(width - 180, 138);
     ctx.stroke();
 
     // 5. User Profile Badge Ribbon
     ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
     ctx.lineWidth = 1.5;
-    const ribbonText = `Palm Reading for: ${displayName} • ${reading.hand === 'right' ? 'Right Palm (Active Karma)' : 'Left Palm (Innate Potential)'}`;
-    ctx.font = 'bold 16px -apple-system, sans-serif';
+    const ribbonText = `Palm Reading for: ${displayName} • ${reading.hand === 'right' ? 'Right Palm' : 'Left Palm'}`;
+    ctx.font = 'bold 15px -apple-system, sans-serif';
     const ribbonWidth = ctx.measureText(ribbonText).width;
     ctx.beginPath();
-    ctx.roundRect(width / 2 - ribbonWidth / 2 - 20, 166, ribbonWidth + 40, 36, 18);
+    ctx.roundRect(width / 2 - ribbonWidth / 2 - 18, 154, ribbonWidth + 36, 32, 16);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(ribbonText, width / 2, 190);
+    ctx.fillText(ribbonText, width / 2, 176);
 
-    // 6. Archetype & Vedic Classification Banner
+    // 6. User Analyzed Palm Photo Avatar
+    if (imageDataUrl) {
+      try {
+        const palmImg = new Image();
+        palmImg.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve) => {
+          palmImg.onload = () => resolve();
+          palmImg.onerror = () => resolve();
+          palmImg.src = imageDataUrl;
+        });
+
+        const avatarX = width / 2;
+        const avatarY = 240;
+        const avatarRadius = 42;
+
+        ctx.save();
+        ctx.shadowColor = '#F59E0B';
+        ctx.shadowBlur = 16;
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(avatarX, avatarY, avatarRadius, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(palmImg, avatarX - avatarRadius, avatarY - avatarRadius, avatarRadius * 2, avatarRadius * 2);
+        ctx.restore();
+      } catch (err) {
+        console.warn('Canvas palm avatar render skipped:', err);
+      }
+    }
+
+    // 7. Archetype & Vedic Classification Banner
+    const archetypeY = imageDataUrl ? 322 : 236;
     ctx.fillStyle = '#F8FAFC';
-    ctx.font = 'bold 28px -apple-system, sans-serif';
-    ctx.fillText(reading.archetype, width / 2, 246);
+    ctx.font = 'bold 26px -apple-system, sans-serif';
+    ctx.fillText(reading.archetype, width / 2, archetypeY);
 
     // Trait Badges Row
-    const badgeY = 285;
+    const badgeY = archetypeY + 36;
     const badges = reading.summaryBadges.slice(0, 4);
     const badgeSpacing = 190;
     const startBadgeX = (width - (badges.length * badgeSpacing)) / 2 + badgeSpacing / 2;
@@ -231,19 +264,20 @@ Scan your palm with AI in 30 seconds for just ₹10!
       ctx.fillText(b, bx, badgeY);
     });
 
-    // 7. Section Header: THE MAIN CRUNCH (प्रमुख निष्कर्ष)
+    // 8. Section Header: THE MAIN CRUNCH (प्रमुख निष्कर्ष)
+    const crunchHeaderY = badgeY + 48;
     ctx.fillStyle = '#FBBF24';
     ctx.font = 'bold 16px -apple-system, sans-serif';
     ctx.letterSpacing = '1.5px';
-    ctx.fillText('✦  THE MAIN CRUNCH (प्रमुख जीवन निष्कर्ष)  ✦', width / 2, 345);
+    ctx.fillText('✦  THE MAIN CRUNCH (प्रमुख जीवन निष्कर्ष)  ✦', width / 2, crunchHeaderY);
 
-    // 8. 4 Main Crunch Pillar Cards (2x2 Grid)
+    // 9. 4 Main Crunch Pillar Cards (2x2 Grid)
     const cardW = 390;
-    const cardH = 145;
+    const cardH = 140;
     const startGridX = 55;
-    const startGridY = 370;
+    const startGridY = crunchHeaderY + 22;
     const gapX = 30;
-    const gapY = 20;
+    const gapY = 16;
 
     pillars.slice(0, 4).forEach((pillar, idx) => {
       const col = idx % 2;
@@ -264,38 +298,38 @@ Scan your palm with AI in 30 seconds for just ₹10!
       ctx.textAlign = 'left';
       ctx.fillStyle = pillar.color;
       ctx.font = 'bold 16px -apple-system, sans-serif';
-      ctx.fillText(pillar.englishName, cx + 18, cy + 32);
+      ctx.fillText(pillar.englishName, cx + 18, cy + 30);
 
       // Score Pill
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.beginPath();
-      ctx.roundRect(cx + cardW - 100, cy + 14, 84, 26, 13);
+      ctx.roundRect(cx + cardW - 100, cy + 12, 84, 26, 13);
       ctx.fill();
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 13px -apple-system, sans-serif';
-      ctx.fillText(`⭐ ${pillar.score}%`, cx + cardW - 58, cy + 31);
+      ctx.fillText(`⭐ ${pillar.score}%`, cx + cardW - 58, cy + 29);
 
       // Traditional Sanskrit Subtitle
       ctx.textAlign = 'left';
       ctx.fillStyle = '#94A3B8';
       ctx.font = '600 12px -apple-system, sans-serif';
-      ctx.fillText(pillar.traditionalName, cx + 18, cy + 56);
+      ctx.fillText(pillar.traditionalName, cx + 18, cy + 54);
 
       // 1-line Crunch Verdict
       ctx.fillStyle = '#E2E8F0';
       ctx.font = '500 13px -apple-system, sans-serif';
       const verdictWords = pillar.verdict.split(' ');
       let lineText = '';
-      let textY = cy + 82;
+      let textY = cy + 78;
       for (let i = 0; i < verdictWords.length; i++) {
         const testLine = lineText + verdictWords[i] + ' ';
         const metrics = ctx.measureText(testLine);
         if (metrics.width > (cardW - 36) && i > 0) {
           ctx.fillText(lineText, cx + 18, textY);
           lineText = verdictWords[i] + ' ';
-          textY += 20;
+          textY += 19;
         } else {
           lineText = testLine;
         }
@@ -303,24 +337,24 @@ Scan your palm with AI in 30 seconds for just ₹10!
       ctx.fillText(lineText, cx + 18, textY);
     });
 
-    // 9. Auspicious Sign & Shubh Yog Ribbon Box
-    const yogY = 725;
+    // 10. Auspicious Sign & Shubh Yog Ribbon Box
+    const yogY = startGridY + (cardH * 2) + gapY + 18;
     ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(55, yogY, width - 110, 150, 16);
+    ctx.roundRect(55, yogY, width - 110, 142, 16);
     ctx.fill();
     ctx.stroke();
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#F59E0B';
     ctx.font = 'bold 16px -apple-system, sans-serif';
-    ctx.fillText(`✨ ${signals.specialYog}`, width / 2, yogY + 36);
+    ctx.fillText(`✨ ${signals.specialYog}`, width / 2, yogY + 34);
 
     ctx.fillStyle = '#CBD5E1';
     ctx.font = '500 13px -apple-system, sans-serif';
-    ctx.fillText(`"${signals.specialYogMeaning}"`, width / 2, yogY + 64);
+    ctx.fillText(`"${signals.specialYogMeaning}"`, width / 2, yogY + 60);
 
     // Auspicious Signals Grid inside box
     ctx.fillStyle = '#FBBF24';
@@ -330,26 +364,21 @@ Scan your palm with AI in 30 seconds for just ₹10!
       `🎨 Color: ${signals.auspiciousColor}`,
       `💎 Gem: ${signals.luckyGemstone}`,
     ];
-    ctx.fillText(guidances.join('   •   '), width / 2, yogY + 98);
+    ctx.fillText(guidances.join('   •   '), width / 2, yogY + 90);
 
     ctx.fillStyle = '#A78BFA';
     ctx.font = 'italic 12px -apple-system, serif';
-    ctx.fillText(`Mantra / Advice: ${signals.guidingMantra}`, width / 2, yogY + 128);
+    ctx.fillText(`Mantra / Advice: ${signals.guidingMantra}`, width / 2, yogY + 118);
 
-    // 10. Quote / Cultural Excerpt
+    // 11. Classical 3-Book Grounding Stamp
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#94A3B8';
-    ctx.font = 'italic 13px -apple-system, serif';
-    ctx.fillText(
-      '"Samudrika Shastra reflects personal tendencies; righteous karma and wisdom shape destiny."',
-      width / 2,
-      910
-    );
+    ctx.fillStyle = '#DDD6FE';
+    ctx.font = 'bold 12.5px -apple-system, sans-serif';
+    ctx.fillText('⚖️ Verified Classical Alignment: Brihat Samudrika • Cheiro (1894) • Benham (1900)', width / 2, yogY + 166);
 
-    // 11. HIGH-PROMINENCE APPLICATION URL PROMOTION FOOTER
-    // (Requested: "while sharing, at the bottom it should promote the application URL")
-    const promoY = 945;
-    const promoH = 295;
+    // 12. HIGH-PROMINENCE APPLICATION URL PROMOTION FOOTER
+    const promoY = yogY + 188;
+    const promoH = 220;
     ctx.fillStyle = 'rgba(8, 11, 26, 0.96)';
     ctx.strokeStyle = '#F59E0B';
     ctx.lineWidth = 2.5;
@@ -359,46 +388,45 @@ Scan your palm with AI in 30 seconds for just ₹10!
     ctx.stroke();
 
     // Golden Accent Top Glow in Promo Box
-    const boxGlow = ctx.createLinearGradient(0, promoY, 0, promoY + 60);
+    const boxGlow = ctx.createLinearGradient(0, promoY, 0, promoY + 50);
     boxGlow.addColorStop(0, 'rgba(245, 158, 11, 0.18)');
     boxGlow.addColorStop(1, 'transparent');
     ctx.fillStyle = boxGlow;
     ctx.beginPath();
-    ctx.roundRect(55, promoY, width - 110, 60, 18);
+    ctx.roundRect(55, promoY, width - 110, 50, 18);
     ctx.fill();
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#FBBF24';
-    ctx.font = 'bold 22px -apple-system, sans-serif';
+    ctx.font = 'bold 20px -apple-system, sans-serif';
     ctx.letterSpacing = '1px';
-    ctx.fillText('✦  DISCOVER THE STORY IN YOUR HANDS  ✦', width / 2, promoY + 48);
+    ctx.fillText('✦  DISCOVER THE STORY IN YOUR HANDS  ✦', width / 2, promoY + 42);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 30px -apple-system, sans-serif';
-    ctx.fillText('Instant AI Palm Reading for ₹10', width / 2, promoY + 95);
+    ctx.font = 'bold 26px -apple-system, sans-serif';
+    ctx.fillText('Instant AI Palm Reading for ₹10', width / 2, promoY + 84);
 
     ctx.fillStyle = '#C4B5FD';
-    ctx.font = '600 15px -apple-system, sans-serif';
-    ctx.fillText('Instant 30s Scan • 100% Private • Grounded in Classical Samudrika Shastra', width / 2, promoY + 130);
+    ctx.font = '600 14px -apple-system, sans-serif';
+    ctx.fillText('Instant 30s Scan • 100% Private • Grounded in Classical Samudrika Shastra', width / 2, promoY + 114);
 
     // URL Button Graphic
     ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
     ctx.strokeStyle = '#F59E0B';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(90, promoY + 155, width - 180, 52, 26);
+    ctx.roundRect(90, promoY + 134, width - 180, 46, 23);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#FDE68A';
-    ctx.font = 'bold 18px -apple-system, monospace';
-    ctx.fillText(`👉  ${siteUrl}`, width / 2, promoY + 188);
+    ctx.font = 'bold 17px -apple-system, monospace';
+    ctx.fillText(`👉  ${siteUrl}`, width / 2, promoY + 163);
 
     // Trust Badges
     ctx.fillStyle = '#94A3B8';
-    ctx.font = '500 12px -apple-system, sans-serif';
-    ctx.fillText('No Subscription • Works on any smartphone • Scan now at link above', width / 2, promoY + 242);
-    ctx.fillText('KAI REGAI • Empowering self-reflection through traditional palmistry', width / 2, promoY + 266);
+    ctx.font = '500 11.5px -apple-system, sans-serif';
+    ctx.fillText('No Subscription • Works on any smartphone • Scan now at link above', width / 2, promoY + 200);
 
     return canvas;
   };
@@ -407,7 +435,7 @@ Scan your palm with AI in 30 seconds for just ₹10!
   const handleDownloadImage = async () => {
     setIsGeneratingImage(true);
     try {
-      const canvas = generateCanvas();
+      const canvas = await generateCanvas();
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `KaiRegAI_Report_Card_${displayName.replace(/\s+/g, '_')}.png`;
@@ -423,7 +451,7 @@ Scan your palm with AI in 30 seconds for just ₹10!
   // WhatsApp sharing with image file on mobile or auto-download + text fallback on desktop
   const handleWhatsAppShare = async () => {
     try {
-      const canvas = generateCanvas();
+      const canvas = await generateCanvas();
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
 
       if (blob && navigator.canShare && typeof navigator.share === 'function') {
@@ -472,8 +500,19 @@ Scan your palm with AI in 30 seconds for just ₹10!
           <div class="advice-box">
             <strong>Vedic Reflection:</strong> ${sec.reflectiveAdvice}
           </div>
+          ${sec.bookComparisons && sec.bookComparisons.length > 0 ? `
+            <div class="citation-box" style="margin-top: 6px; padding: 6px 10px; background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 6px;">
+              <strong style="color: #6B21A8; display: block; margin-bottom: 2px;">⚖️ Classical 3-Book Verification:</strong>
+              ${sec.bookComparisons.map(c => `
+                <div style="margin-bottom: 2px;">
+                  <span style="font-weight: 700; color: #581C87;">${c.tradition} (${c.reference}):</span> 
+                  <span style="color: #374151;">"${c.interpretation}"</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
           ${sec.sources && sec.sources.length > 0 ? `
-            <div class="citation-box">
+            <div class="citation-box" style="margin-top: 4px;">
               <strong>Source Reference:</strong>
               ${sec.sources.map(s => `<span>${s.author ? s.author + ' - ' : ''}<em>${s.sourceTitle}</em> (${s.reference})</span>`).join(' • ')}
             </div>
@@ -556,11 +595,19 @@ Scan your palm with AI in 30 seconds for just ₹10!
             <div>
               <div class="logo-title">✋ KAI REGAI (हस्तरेखा)</div>
               <div class="subtitle">Certified AI Samudrika Shastra Report</div>
+              <div style="font-size: 11px; color: #7C3AED; font-weight: 700; margin-top: 3px;">
+                ⚖️ Grounded in: Brihat Samudrika • Cheiro (1894) • Benham (1900)
+              </div>
             </div>
-            <div class="meta-grid">
-              <div><strong>Name:</strong> ${displayName}</div>
-              <div><strong>Hand:</strong> ${reading.hand === 'right' ? 'Right (Active Karma)' : 'Left (Innate Potential)'}</div>
-              <div><strong>Date:</strong> ${new Date(reading.generatedAt || Date.now()).toLocaleDateString()}</div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              ${imageDataUrl ? `
+                <img src="${imageDataUrl}" alt="Palm Photo" style="width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 2px solid #D97706; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+              ` : ''}
+              <div class="meta-grid">
+                <div><strong>Name:</strong> ${displayName}</div>
+                <div><strong>Hand:</strong> ${reading.hand === 'right' ? 'Right (Active Karma)' : 'Left (Innate Potential)'}</div>
+                <div><strong>Date:</strong> ${new Date(reading.generatedAt || Date.now()).toLocaleDateString()}</div>
+              </div>
             </div>
           </div>
 
@@ -642,6 +689,13 @@ Scan your palm with AI in 30 seconds for just ₹10!
             </span>
           </div>
 
+          {/* User Analyzed Palm Photo Avatar */}
+          {imageDataUrl && (
+            <div style={{ margin: '0 auto 10px', width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', border: '2.5px solid #F59E0B', boxShadow: '0 0 16px rgba(245, 158, 11, 0.45)' }}>
+              <img src={imageDataUrl} alt="Palm" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          )}
+
           <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#FFFFFF', margin: '0 0 10px' }}>
             {reading.archetype}
           </h3>
@@ -688,6 +742,22 @@ Scan your palm with AI in 30 seconds for just ₹10!
             }}
           >
             ✨ <strong>Special Yog:</strong> {signals.specialYog} • <strong>Day:</strong> {signals.luckyDay}
+          </div>
+
+          {/* Classical 3-Book Grounding Stamp */}
+          <div
+            style={{
+              fontSize: '10px',
+              color: '#DDD6FE',
+              fontWeight: 600,
+              backgroundColor: 'rgba(124, 58, 237, 0.15)',
+              border: '1px solid rgba(167, 139, 250, 0.3)',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              marginBottom: '10px',
+            }}
+          >
+            ⚖️ Grounded in: Brihat Samudrika • Cheiro (1894) • Benham (1900)
           </div>
 
           {/* HIGH-PROMINENCE APPLICATION URL PROMOTION FOOTER */}

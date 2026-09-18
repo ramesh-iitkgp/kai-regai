@@ -29,7 +29,7 @@ export interface ProfileViewProps {
   onOpenDisclaimer: () => void;
   onSelectSavedReading: (reading: FullPalmReading, thumbnailUrl?: string) => void;
   onStartNewScan: () => void;
-  onOpenShareCard?: (reading: FullPalmReading, name: string) => void;
+  onOpenShareCard?: (reading: FullPalmReading, name: string, thumbnailUrl?: string) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -303,7 +303,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {onOpenShareCard && (
                     <button
-                      onClick={() => onOpenShareCard(item.reading, item.name || 'Palm 1')}
+                      onClick={() => onOpenShareCard(item.reading, item.name || 'Palm 1', item.thumbnailUrl)}
                       title="Share / Download Reading Card"
                       style={{
                         background: 'rgba(124, 58, 237, 0.12)',
