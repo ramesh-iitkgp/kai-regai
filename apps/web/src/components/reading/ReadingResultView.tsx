@@ -37,7 +37,8 @@ export interface ReadingResultViewProps {
   onShare: () => void;
   onReset: () => void;
   onPurgePhoto?: () => void;
-  onOpenAskKai?: () => void;
+  onOpenAskKai?: (initialQuestion?: string) => void;
+  externalInspectCrease?: 'heart' | 'head' | 'life' | 'fate' | null;
 }
 
 type ActiveTab = 'crunch' | 'palm' | 'shastra';
@@ -52,6 +53,7 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
   onReset,
   onPurgePhoto,
   onOpenAskKai,
+  externalInspectCrease,
 }) => {
   const { currentLanguage, t, formatDate } = useLanguage();
   const [currentName, setCurrentName] = useState(userName);
@@ -62,6 +64,13 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
   const [selectedCitationSection, setSelectedCitationSection] = useState<ReadingCardSection | null>(null);
   const [highlightedLine, setHighlightedLine] = useState<string | null>('heart');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    if (externalInspectCrease) {
+      setHighlightedLine(externalInspectCrease);
+      setActiveTab('palm');
+    }
+  }, [externalInspectCrease]);
 
   // Automatically record to local reading history upon generation
   useEffect(() => {
@@ -460,12 +469,39 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                   </div>
 
                   <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '6px', fontSize: '10px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                    <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '55%' }}>
                       <strong style={{ color: 'var(--text-secondary)' }}>Indicator:</strong> {pillar.keyIndicator}
                     </span>
-                    <span style={{ fontSize: '9.5px', color: pillar.color, fontWeight: 800, flexShrink: 0 }}>
-                      🔍 Inspect
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {onOpenAskKai && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const pQ =
+                              pillar.id === 'love' ? 'What does Cheiro say about my heart line?' :
+                              pillar.id === 'mind' ? 'How does Benham interpret my head line slope?' :
+                              pillar.id === 'health' ? 'What does Samudrika Shastra say about my vitality?' :
+                              'What does my fate line reveal about career timing?';
+                            onOpenAskKai(pQ);
+                          }}
+                          style={{
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
+                            borderRadius: '4px',
+                            color: '#FBBF24',
+                            fontSize: '9.5px',
+                            fontWeight: 700,
+                            padding: '2px 5px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Ask Kai
+                        </button>
+                      )}
+                      <span style={{ fontSize: '9.5px', color: pillar.color, fontWeight: 800, flexShrink: 0 }}>
+                        🔍 Inspect
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -533,7 +569,7 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                 <Button
                   variant="secondary"
                   fullWidth
-                  onClick={onOpenAskKai}
+                  onClick={() => onOpenAskKai()}
                   leftIcon={<MessageCircle size={16} />}
                 >
                   Ask Kai AI
@@ -723,32 +759,64 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
                           section.id === 'career' ? 'fate' : 'head';
 
                         return (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
                             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                               Feature: <strong style={{ color: 'var(--text-primary)' }}>{sectionLineName}</strong>
                             </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setHighlightedLine(targetLine);
-                                setActiveTab('palm');
-                              }}
-                              style={{
-                                background: 'rgba(124, 58, 237, 0.15)',
-                                border: '1px solid rgba(167, 139, 250, 0.35)',
-                                borderRadius: 'var(--radius-full)',
-                                color: '#DDD6FE',
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                padding: '4px 10px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <span>🔍 Inspect on Palm Photo</span>
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {onOpenAskKai && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const sQ =
+                                      section.id === 'love' ? 'What does Cheiro say about my heart line?' :
+                                      section.id === 'mind' ? 'How does Benham interpret my head line slope?' :
+                                      section.id === 'vitality' ? 'What does Samudrika Shastra say about my vitality?' :
+                                      section.id === 'career' ? 'What does my fate line reveal about career timing?' :
+                                      'What does Samudrika Shastra say about my palm mounts and signs?';
+                                    onOpenAskKai(sQ);
+                                  }}
+                                  style={{
+                                    background: 'rgba(245, 158, 11, 0.15)',
+                                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                                    borderRadius: 'var(--radius-full)',
+                                    color: '#FBBF24',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    padding: '4px 9px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <MessageCircle size={11} color="#FBBF24" />
+                                  <span>Ask Kai</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setHighlightedLine(targetLine);
+                                  setActiveTab('palm');
+                                }}
+                                style={{
+                                  background: 'rgba(124, 58, 237, 0.15)',
+                                  border: '1px solid rgba(167, 139, 250, 0.35)',
+                                  borderRadius: 'var(--radius-full)',
+                                  color: '#DDD6FE',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  padding: '4px 10px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <span>🔍 Inspect on Palm Photo</span>
+                              </button>
+                            </div>
                           </div>
                         );
                       })()}

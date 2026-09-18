@@ -77,6 +77,8 @@ export function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [isAskKaiOpen, setIsAskKaiOpen] = useState(false);
+  const [askKaiInitialQuestion, setAskKaiInitialQuestion] = useState<string | undefined>(undefined);
+  const [activeReadingInspectCrease, setActiveReadingInspectCrease] = useState<'heart' | 'head' | 'life' | 'fate' | null>(null);
   const [isAdminView, setIsAdminView] = useState<boolean>(() => window.location.search.includes('admin=true'));
 
   // Reactive Language Reload: when language changes, re-fetch reading in that language
@@ -374,7 +376,11 @@ export function App() {
                 }}
                 onReset={handleResetFlow}
                 onPurgePhoto={handlePurgePhoto}
-                onOpenAskKai={() => setIsAskKaiOpen(true)}
+                onOpenAskKai={(initialQuestion) => {
+                  setAskKaiInitialQuestion(initialQuestion);
+                  setIsAskKaiOpen(true);
+                }}
+                externalInspectCrease={activeReadingInspectCrease}
               />
             )}
           </>
@@ -394,9 +400,20 @@ export function App() {
       {reading && analysis && (
         <AskKaiDrawer
           isOpen={isAskKaiOpen}
-          onClose={() => setIsAskKaiOpen(false)}
+          onClose={() => {
+            setIsAskKaiOpen(false);
+            setAskKaiInitialQuestion(undefined);
+          }}
           reading={reading}
           analysis={analysis}
+          initialQuestion={askKaiInitialQuestion}
+          onInspectCrease={(crease) => {
+            setIsAskKaiOpen(false);
+            setAskKaiInitialQuestion(undefined);
+            setActiveNavTab('reading');
+            setCurrentStep('results');
+            setActiveReadingInspectCrease(crease);
+          }}
         />
       )}
 
