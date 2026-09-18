@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import type { StructuredPalmAnalysis, Point2D } from '../../types/contracts';
 import { Eye, EyeOff, Sparkles, Heart, Brain, Compass } from 'lucide-react';
 import { Badge } from '../ui/Badge';
-import { HAND_CONNECTIONS, detectHandFromUrl } from '../../services/mediapipeService';
+import {
+  HAND_CONNECTIONS,
+  detectHandFromUrl,
+  pointsToSmoothSvgPath,
+  type MediaPipeHandResult,
+} from '../../services/mediapipeService';
 
 export interface PalmAnalysisOverlayProps {
   imageDataUrl: string;
@@ -25,6 +30,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const [enhanceCreases, setEnhanceCreases] = useState(false);
   const [showMesh, setShowMesh] = useState(false);
   const [landmarks, setLandmarks] = useState<Point2D[] | null>(analysis.landmarks || null);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
 
   // Controlled or uncontrolled line selection
   const selectedLine = activeLine !== undefined ? activeLine : internalSelectedLine;
@@ -35,6 +41,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
     }
   };
 
+  const [creasePoints, setCreasePoints] = useState<MediaPipeHandResult['creases'] | null>(null);
   const [dynamicCreases, setDynamicCreases] = useState<{
     heartLine?: string;
     headLine?: string;
@@ -47,6 +54,9 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
       detectHandFromUrl(imageDataUrl).then((res) => {
         if (res?.landmarks) {
           setLandmarks(res.landmarks);
+          if (res.creases) {
+            setCreasePoints(res.creases);
+          }
           if (res.svgPaths) {
             setDynamicCreases({
               heartLine: res.svgPaths.heartLine,
@@ -65,7 +75,71 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
   const [offsetY, setOffsetY] = useState(0);
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [lineThickness, setLineThickness] = useState<number>(0.75);
+  const [lineThickness, setLineThickness] = useState<number>(0.50);
+  const [lineSpan, setLineSpan] = useState<number>(1.0);
+
+  // Interactive drag state for fine-tuning crease anchor points
+  const [draggingPoint, setDraggingPoint] = useState<{
+    lineKey: 'heartLine' | 'headLine' | 'lifeLine' | 'fateLine';
+    pointIndex: number;
+  } | null>(null);
+
+  const handlePointerDownPoint = (
+    lineKey: 'heartLine' | 'headLine' | 'lifeLine' | 'fateLine',
+    pointIndex: number,
+    e: React.PointerEvent
+  ) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    setDraggingPoint({ lineKey, pointIndex });
+  };
+
+  const handlePointerMoveSvg = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!draggingPoint || !creasePoints) return;
+    const svgRect = e.currentTarget.getBoundingClientRect();
+    if (!svgRect.width || !svgRect.height) return;
+
+    const x = Math.max(0, Math.min(100, ((e.clientX - svgRect.left) / svgRect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - svgRect.top) / svgRect.height) * 100));
+
+    const updatedPoints = {
+      ...creasePoints,
+      [draggingPoint.lineKey]: creasePoints[draggingPoint.lineKey].map((pt, i) =>
+        i === draggingPoint.pointIndex ? { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 } : pt
+      ),
+    };
+
+    setCreasePoints(updatedPoints);
+    setDynamicCreases((prev) => ({
+      ...prev,
+      [draggingPoint.lineKey]: pointsToSmoothSvgPath(updatedPoints[draggingPoint.lineKey]),
+    }));
+  };
+
+  const handlePointerUpSvg = () => {
+    setDraggingPoint(null);
+  };
+
+  // Helper to dynamically extend or shorten crease endpoints
+  const applySpanToPoints = (pts: Point2D[], span: number): Point2D[] => {
+    if (!pts || pts.length < 2 || span === 1.0) return pts;
+    const n = pts.length - 1;
+    return pts.map((pt, i) => {
+      if (i === 0) {
+        return {
+          x: Math.round((pts[1].x + (pts[0].x - pts[1].x) * span) * 10) / 10,
+          y: Math.round((pts[1].y + (pts[0].y - pts[1].y) * span) * 10) / 10,
+        };
+      }
+      if (i === n) {
+        return {
+          x: Math.round((pts[n - 1].x + (pts[n].x - pts[n - 1].x) * span) * 10) / 10,
+          y: Math.round((pts[n - 1].y + (pts[n].y - pts[n - 1].y) * span) * 10) / 10,
+        };
+      }
+      return pt;
+    });
+  };
 
   const { lines, handArchetype, hand } = analysis;
   const isRight = hand === 'right';
@@ -77,42 +151,54 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
   if (autoZoom && selectedLine) {
     if (selectedLine === 'heart') {
-      focalScale = 1.32;
-      focalY = 12;
-      focalX = isRight ? -4 : 4;
+      focalScale = 1.25;
+      focalY = 8;
+      focalX = isRight ? -3 : 3;
     } else if (selectedLine === 'head') {
-      focalScale = 1.28;
-      focalY = 3;
+      focalScale = 1.22;
+      focalY = 2;
       focalX = 0;
     } else if (selectedLine === 'life') {
-      focalScale = 1.34;
-      focalY = -8;
-      focalX = isRight ? 8 : -8;
+      focalScale = 1.28;
+      focalY = -5;
+      focalX = isRight ? 5 : -5;
     } else if (selectedLine === 'fate') {
-      focalScale = 1.25;
+      focalScale = 1.20;
       focalY = 0;
       focalX = 0;
     }
   }
 
-  const netScale = scale * focalScale;
-  const netX = offsetX * 0.2 + focalX;
-  const netY = offsetY * 0.2 + focalY;
-
-  // Anatomically accurate, organic palmistry paths
+  // Fallback paths if landmarks are not available
   const defaultHeartPath = isRight
-    ? 'M 80 38 C 65 37, 48 35, 34 32 C 27 30, 22 27, 18 24'
-    : 'M 20 38 C 35 37, 52 35, 66 32 C 73 30, 78 27, 82 24';
+    ? 'M 88 38 C 72 37, 48 34, 32 30 C 24 28, 18 24, 12 20'
+    : 'M 12 38 C 28 37, 52 34, 68 30 C 76 28, 82 24, 88 20';
 
   const defaultHeadPath = isRight
-    ? 'M 24 43 C 38 47, 56 51, 74 58 C 79 60, 83 63, 86 66'
-    : 'M 76 43 C 62 47, 44 51, 26 58 C 21 60, 17 63, 14 66';
+    ? 'M 20 42 C 36 46, 56 50, 76 56 C 82 58, 88 62, 92 66'
+    : 'M 80 42 C 64 46, 44 50, 24 56 C 18 58, 12 62, 8 66';
 
   const defaultLifePath = isRight
-    ? 'M 24 43 C 21 56, 24 70, 34 82 C 40 90, 46 94, 50 96'
-    : 'M 76 43 C 79 56, 76 70, 66 82 C 60 90, 54 94, 50 96';
+    ? 'M 20 42 C 26 55, 29 70, 32 82 C 34 88, 38 94, 42 96'
+    : 'M 80 42 C 74 55, 71 70, 68 82 C 66 88, 62 94, 58 96';
 
-  const defaultFatePath = 'M 50 92 C 51 74, 51 54, 50 34';
+  const defaultFatePath = 'M 50 92 C 50.5 74, 50.5 54, 50 32';
+
+  const activeHeartPath = creasePoints?.heartLine
+    ? pointsToSmoothSvgPath(applySpanToPoints(creasePoints.heartLine, lineSpan))
+    : dynamicCreases?.heartLine || lines.heart?.svgPath || defaultHeartPath;
+
+  const activeHeadPath = creasePoints?.headLine
+    ? pointsToSmoothSvgPath(applySpanToPoints(creasePoints.headLine, lineSpan))
+    : dynamicCreases?.headLine || lines.head?.svgPath || defaultHeadPath;
+
+  const activeLifePath = creasePoints?.lifeLine
+    ? pointsToSmoothSvgPath(applySpanToPoints(creasePoints.lifeLine, lineSpan))
+    : dynamicCreases?.lifeLine || lines.life?.svgPath || defaultLifePath;
+
+  const activeFatePath = creasePoints?.fateLine
+    ? pointsToSmoothSvgPath(applySpanToPoints(creasePoints.fateLine, lineSpan))
+    : dynamicCreases?.fateLine || lines.fate?.svgPath || defaultFatePath;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} id="palm-visualizer-container">
@@ -158,8 +244,9 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '340px',
-          height: '380px',
+          maxWidth: '350px',
+          maxHeight: '440px',
+          aspectRatio: imageAspectRatio ? `${imageAspectRatio}` : '3/4',
           margin: '0 auto',
           borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
@@ -169,13 +256,13 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           transition: 'border-color 0.3s ease',
         }}
       >
-        {/* Dynamic Zoom & Pan Wrapper for Pixel-Perfect Synchronized Alignment */}
+        {/* Synchronized Zoom & Pan Wrapper for Pixel-Perfect Alignment */}
         <div
           style={{
             position: 'relative',
             width: '100%',
             height: '100%',
-            transform: `scale(${netScale}) translate(${netX}%, ${netY}%)`,
+            transform: `scale(${focalScale}) translate(${focalX}%, ${focalY}%)`,
             transformOrigin: '50% 50%',
             transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
@@ -183,11 +270,18 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           <img
             src={imageDataUrl}
             alt="Analyzed Palm"
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              if (img.naturalWidth && img.naturalHeight) {
+                setImageAspectRatio(img.naturalWidth / img.naturalHeight);
+              }
+            }}
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              opacity: 0.9,
+              objectFit: 'contain',
+              display: 'block',
+              opacity: 0.92,
               filter: enhanceCreases
                 ? 'contrast(1.6) brightness(0.9) saturate(0.8)'
                 : 'none',
@@ -198,26 +292,31 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           {showOverlays && (
             <svg
               viewBox="0 0 100 100"
+              preserveAspectRatio="none"
               style={{
                 position: 'absolute',
                 inset: 0,
                 width: '100%',
                 height: '100%',
-                pointerEvents: 'none',
+                pointerEvents: showCalibrate ? 'auto' : 'none',
+                touchAction: 'none',
               }}
+              onPointerMove={handlePointerMoveSvg}
+              onPointerUp={handlePointerUpSvg}
+              onPointerLeave={handlePointerUpSvg}
             >
               <defs>
                 <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#F43F5E" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.7" floodColor="#F43F5E" />
                 </filter>
                 <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#38BDF8" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.7" floodColor="#38BDF8" />
                 </filter>
                 <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#10B981" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.7" floodColor="#10B981" />
                 </filter>
                 <filter id="glow-gold" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="0.9" floodColor="#F59E0B" />
+                  <feDropShadow dx="0" dy="0" stdDeviation="0.7" floodColor="#F59E0B" />
                 </filter>
               </defs>
 
@@ -228,10 +327,10 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
               >
                 {lines.heart?.detected && (
                   <path
-                    d={dynamicCreases?.heartLine || lines.heart.svgPath || defaultHeartPath}
+                    d={activeHeartPath}
                     fill="none"
                     stroke="#F43F5E"
-                    strokeWidth={selectedLine === 'heart' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
+                    strokeWidth={selectedLine === 'heart' ? (lineThickness * 1.3).toFixed(2) : (lineThickness * 0.85).toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'heart' ? 'url(#glow-rose)' : undefined}
                     style={{
@@ -243,10 +342,10 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.head?.detected && (
                   <path
-                    d={dynamicCreases?.headLine || lines.head.svgPath || defaultHeadPath}
+                    d={activeHeadPath}
                     fill="none"
                     stroke="#38BDF8"
-                    strokeWidth={selectedLine === 'head' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
+                    strokeWidth={selectedLine === 'head' ? (lineThickness * 1.3).toFixed(2) : (lineThickness * 0.85).toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'head' ? 'url(#glow-cyan)' : undefined}
                     style={{
@@ -258,10 +357,10 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.life?.detected && (
                   <path
-                    d={dynamicCreases?.lifeLine || lines.life.svgPath || defaultLifePath}
+                    d={activeLifePath}
                     fill="none"
                     stroke="#10B981"
-                    strokeWidth={selectedLine === 'life' ? (lineThickness * 1.6).toFixed(2) : lineThickness.toFixed(2)}
+                    strokeWidth={selectedLine === 'life' ? (lineThickness * 1.3).toFixed(2) : (lineThickness * 0.85).toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'life' ? 'url(#glow-green)' : undefined}
                     style={{
@@ -273,10 +372,10 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.fate?.detected && (
                   <path
-                    d={dynamicCreases?.fateLine || lines.fate.svgPath || defaultFatePath}
+                    d={activeFatePath}
                     fill="none"
                     stroke="#F59E0B"
-                    strokeWidth={selectedLine === 'fate' ? (lineThickness * 1.5).toFixed(2) : (lineThickness * 0.9).toFixed(2)}
+                    strokeWidth={selectedLine === 'fate' ? (lineThickness * 1.3).toFixed(2) : (lineThickness * 0.75).toFixed(2)}
                     strokeLinecap="round"
                     filter={selectedLine === 'fate' ? 'url(#glow-gold)' : undefined}
                     strokeDasharray={selectedLine === 'fate' ? undefined : '2 1'}
@@ -314,7 +413,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                         key={`joint-${i}`}
                         cx={pt.x}
                         cy={pt.y}
-                        r={i === 0 ? '2.2' : i % 4 === 0 ? '1.8' : '1.2'}
+                        r={i === 0 ? '2.0' : i % 4 === 0 ? '1.6' : '1.1'}
                         fill={i === 0 ? '#F59E0B' : i % 4 === 0 ? '#10B981' : '#38BDF8'}
                         stroke="#0F172A"
                         strokeWidth="0.5"
@@ -322,10 +421,55 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     ))}
                   </g>
                 )}
+
+                {/* Interactive Anchor Drag Handles in Calibration Mode */}
+                {showCalibrate && creasePoints && (
+                  <g className="calibration-drag-handles">
+                    {(['heartLine', 'headLine', 'lifeLine', 'fateLine'] as const).map((lineKey) => {
+                      const isLineActive =
+                        !selectedLine ||
+                        (selectedLine === 'heart' && lineKey === 'heartLine') ||
+                        (selectedLine === 'head' && lineKey === 'headLine') ||
+                        (selectedLine === 'life' && lineKey === 'lifeLine') ||
+                        (selectedLine === 'fate' && lineKey === 'fateLine');
+
+                      if (!isLineActive) return null;
+
+                      const pts = creasePoints[lineKey];
+                      const color =
+                        lineKey === 'heartLine' ? '#F43F5E' :
+                        lineKey === 'headLine' ? '#38BDF8' :
+                        lineKey === 'lifeLine' ? '#10B981' : '#F59E0B';
+
+                      return pts.map((pt, idx) => {
+                        const isDragging = draggingPoint?.lineKey === lineKey && draggingPoint?.pointIndex === idx;
+                        return (
+                          <circle
+                            key={`${lineKey}-handle-${idx}`}
+                            cx={pt.x}
+                            cy={pt.y}
+                            r={isDragging ? 3.0 : 1.9}
+                            fill={color}
+                            stroke="#FFFFFF"
+                            strokeWidth="0.7"
+                            style={{
+                              cursor: 'grab',
+                              filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))',
+                              transition: isDragging ? 'none' : 'r 0.15s ease',
+                              touchAction: 'none',
+                            }}
+                            onPointerDown={(e) => handlePointerDownPoint(lineKey, idx, e)}
+                          />
+                        );
+                      });
+                    })}
+                  </g>
+                )}
               </g>
             </svg>
           )}
         </div>
+
 
         {/* Floating Focused Crease Annotation Callout */}
         {selectedLine && (
@@ -581,6 +725,23 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
               />
             </div>
+            {/* Crease Span / Full Length Coverage */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
+                <span>Crease Span / Full Length Coverage</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{Math.round(lineSpan * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0.70"
+                max="1.35"
+                step="0.05"
+                value={lineSpan}
+                onChange={(e) => setLineSpan(Number(e.target.value))}
+                style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
+              />
+            </div>
+
             {/* Line Thickness */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
@@ -589,13 +750,22 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
               </div>
               <input
                 type="range"
-                min="0.30"
-                max="1.50"
+                min="0.20"
+                max="1.20"
                 step="0.05"
                 value={lineThickness}
                 onChange={(e) => setLineThickness(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
               />
+            </div>
+
+            <div style={{ padding: '6px 10px', background: 'rgba(56, 189, 248, 0.08)', borderRadius: '6px', border: '1px dashed rgba(56, 189, 248, 0.3)' }}>
+              <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: 600 }}>
+                💡 Direct Touch Dragging Active:
+              </div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                You can drag the glowing colored dots directly on your photo to match your unique palm lines down to the millimeter!
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
@@ -605,6 +775,9 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                     detectHandFromUrl(imageDataUrl).then((res) => {
                       if (res?.landmarks) {
                         setLandmarks(res.landmarks);
+                        if (res.creases) {
+                          setCreasePoints(res.creases);
+                        }
                         if (res.svgPaths) {
                           setDynamicCreases({
                             heartLine: res.svgPaths.heartLine,
@@ -620,6 +793,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                   setOffsetY(0);
                   setScale(1);
                   setRotation(0);
+                  setLineSpan(1.0);
                 }}
                 style={{
                   background: 'rgba(56, 189, 248, 0.15)',
@@ -635,7 +809,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                   gap: '4px',
                 }}
               >
-                <span>⚡ Auto-Fit Lines to Hand</span>
+                <span>⚡ Auto-Fit & Ridge-Snap</span>
               </button>
 
               <button
@@ -644,6 +818,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
                   setOffsetY(0);
                   setScale(1);
                   setRotation(0);
+                  setLineSpan(1.0);
                 }}
                 style={{
                   background: 'transparent',
@@ -661,7 +836,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
           </div>
         ) : (
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Tip: Click <em>Adjust Alignment</em> to scale or rotate the lines to match your hand's angle.
+            Tip: Click <em>Adjust Alignment</em> to drag control dots directly on your photo or adjust line length/angle.
           </div>
         )}
       </div>

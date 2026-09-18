@@ -99,7 +99,8 @@ function lerp(a: Point2D, b: Point2D, t: number): Point2D {
 }
 
 /**
- * Derives the 4 principal Shastra palm lines dynamically from the 21 MediaPipe skeletal landmarks
+ * Derives the 4 principal Shastra palm lines dynamically from the 21 MediaPipe skeletal landmarks.
+ * Accurately spans the full length of each crease from true anatomical origin to true anatomical termination.
  */
 export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   landmarks: Point2D[];
@@ -121,80 +122,98 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   const ringMcp = lm[13];
   const pinkyMcp = lm[17];
 
-  // Determine handedness: for a palmar view (palm facing camera):
-  // If thumb is to the left of the pinky, it's typically a right hand.
+  // Determine handedness: palmar view (palm facing camera)
+  // If thumb is to the left of pinky, it's typically a right hand (or unmirrored)
   const isRight = thumbMcp.x < pinkyMcp.x;
   const handedness = isRight ? 'right' : 'left';
 
-  // Define the base width of the palm across the wrist heel:
-  // Radial side: toward thumb base (thenar eminence)
-  const wristRadial = lerp(wrist, thumbCmc, 0.55);
-  // Ulnar side: toward hypothenar eminence (outer wrist below pinky)
-  const knuckleTransVector = {
+  // Across knuckles vector (index knuckle to pinky knuckle):
+  const vecKnuckles = {
     x: pinkyMcp.x - indexMcp.x,
     y: pinkyMcp.y - indexMcp.y,
   };
-  const wristUlnar = {
-    x: wrist.x + knuckleTransVector.x * 0.35,
-    y: wrist.y + knuckleTransVector.y * 0.35,
+  const knuckleDist = Math.hypot(vecKnuckles.x, vecKnuckles.y) || 1;
+  const uUlnar = { x: vecKnuckles.x / knuckleDist, y: vecKnuckles.y / knuckleDist };
+  const uRadial = { x: -uUlnar.x, y: -uUlnar.y };
+
+  // Outer skin percussion (ulnar border below pinky extends beyond skeletal knuckle)
+  const ulnarSkin = {
+    x: uUlnar.x * knuckleDist * 0.18,
+    y: uUlnar.y * knuckleDist * 0.18,
   };
 
-  // Anatomical quadrilateral palm interpolator:
-  // uLong: 0 = wrist base, 1 = knuckle arch (distal palm boundary)
-  // uTrans: 0 = index knuckle (radial), 1 = pinky knuckle (ulnar)
-  const getPalmPoint = (uLong: number, uTrans: number): Point2D => {
-    // Knuckle position along the upper arch
-    let knucklePt: Point2D;
-    if (uTrans <= 0.33) {
-      knucklePt = lerp(indexMcp, middleMcp, uTrans / 0.33);
-    } else if (uTrans <= 0.66) {
-      knucklePt = lerp(middleMcp, ringMcp, (uTrans - 0.33) / 0.33);
-    } else {
-      knucklePt = lerp(ringMcp, pinkyMcp, Math.min(1.0, (uTrans - 0.66) / 0.34));
-    }
+  // Radial skin fold (between index and thumb knuckles)
+  const radialSkin = {
+    x: uRadial.x * knuckleDist * 0.10,
+    y: uRadial.y * knuckleDist * 0.10,
+  };
 
-    // Wrist base position along the lower heel
-    const basePt = lerp(wristRadial, wristUlnar, uTrans);
+  // Palm base width across wrist heel
+  const wristRadial = lerp(wrist, thumbCmc, 0.65);
+  const wristUlnar = {
+    x: wrist.x + uUlnar.x * knuckleDist * 0.50,
+    y: wrist.y + uUlnar.y * knuckleDist * 0.50,
+  };
 
-    return lerp(basePt, knucklePt, uLong);
+  // The true anatomical origin for Head and Life lines in the index-thumb radial skin web fold
+  const webOriginRaw = lerp(indexMcp, thumbMcp, 0.42);
+  const webOrigin: Point2D = {
+    x: Math.round((webOriginRaw.x + radialSkin.x) * 10) / 10,
+    y: Math.round((webOriginRaw.y + radialSkin.y) * 10) / 10,
   };
 
   // 1. Heart Line (Hridaya Rekha) — Distal transverse crease
-  // Starts on the ulnar percussion edge below pinky, curves across upper palm toward index knuckle
+  // Covers the whole width: starts on outer ulnar percussion edge, traverses below pinky, ring, middle,
+  // and terminates in the interdigital space under index/middle.
+  const heartPercussionEdge: Point2D = {
+    x: Math.round((lerp(pinkyMcp, wristUlnar, 0.28).x + ulnarSkin.x * 1.25) * 10) / 10,
+    y: Math.round((lerp(pinkyMcp, wristUlnar, 0.28).y + ulnarSkin.y * 1.25) * 10) / 10,
+  };
+
   const heartLine: Point2D[] = [
-    getPalmPoint(0.72, 1.0),
-    getPalmPoint(0.68, 0.70),
-    getPalmPoint(0.65, 0.40),
-    getPalmPoint(0.72, 0.18),
-    getPalmPoint(0.80, 0.08),
+    heartPercussionEdge,
+    lerp(pinkyMcp, wristUlnar, 0.24),
+    lerp(ringMcp, lerp(wristRadial, wristUlnar, 0.70), 0.28),
+    lerp(middleMcp, lerp(wristRadial, wristUlnar, 0.45), 0.32),
+    lerp(lerp(indexMcp, middleMcp, 0.48), wrist, 0.22),
+    lerp(lerp(indexMcp, middleMcp, 0.42), wrist, 0.12),
   ];
 
   // 2. Head Line (Matru Rekha) — Proximal transverse crease
-  // Starts at radial edge between index & thumb, traverses diagonally across mid-palm
+  // Covers the whole width: starts at radial web fold, crosses mid-palm diagonally,
+  // and reaches all the way across to the hypothenar margin (Mount of Moon).
+  const headHypothenarEdge: Point2D = {
+    x: Math.round((lerp(pinkyMcp, wristUlnar, 0.68).x + ulnarSkin.x * 0.65) * 10) / 10,
+    y: Math.round((lerp(pinkyMcp, wristUlnar, 0.68).y + ulnarSkin.y * 0.65) * 10) / 10,
+  };
+
   const headLine: Point2D[] = [
-    getPalmPoint(0.64, 0.04),
-    getPalmPoint(0.55, 0.28),
-    getPalmPoint(0.48, 0.58),
-    getPalmPoint(0.42, 0.88),
+    webOrigin,
+    lerp(indexMcp, wristRadial, 0.36),
+    lerp(middleMcp, lerp(wristRadial, wristUlnar, 0.46), 0.50),
+    lerp(ringMcp, lerp(wristRadial, wristUlnar, 0.72), 0.58),
+    lerp(pinkyMcp, wristUlnar, 0.62),
+    headHypothenarEdge,
   ];
 
   // 3. Life Line (Ayur Rekha) — Thenar crease
-  // Arcs smoothly around the Mount of Venus (thumb base) towards the wrist
+  // Hugs the entire Thenar Eminence (Mount of Venus) wrapping tightly around the thumb base to the wrist
   const lifeLine: Point2D[] = [
-    getPalmPoint(0.64, 0.05),
-    getPalmPoint(0.50, 0.18),
-    getPalmPoint(0.34, 0.22),
-    getPalmPoint(0.18, 0.15),
-    getPalmPoint(0.06, 0.05),
+    webOrigin,
+    lerp(lerp(webOrigin, thumbMcp, 0.45), indexMcp, 0.08),
+    lerp(thumbMcp, lerp(middleMcp, wrist, 0.38), 0.24),
+    lerp(lerp(thumbMcp, thumbCmc, 0.52), lerp(wrist, middleMcp, 0.45), 0.20),
+    lerp(thumbCmc, wrist, 0.32),
+    lerp(wrist, thumbCmc, 0.55),
   ];
 
   // 4. Fate Line (Karma Rekha) — Vertical median crease
   // Ascends vertically from wrist up the palm center toward Mount of Saturn (middle knuckle)
   const fateLine: Point2D[] = [
-    getPalmPoint(0.10, 0.48),
-    getPalmPoint(0.35, 0.46),
-    getPalmPoint(0.58, 0.42),
-    getPalmPoint(0.78, 0.38),
+    lerp(wrist, middleMcp, 0.12),
+    lerp(wrist, middleMcp, 0.34),
+    lerp(wrist, middleMcp, 0.56),
+    lerp(wrist, middleMcp, 0.78),
   ];
 
   // 5. Palm Boundary Outline (Wrist -> Thumb -> Index -> Pinky -> Wrist)
@@ -223,7 +242,118 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
 }
 
 /**
+ * Pixel-level adaptive ridge snapping:
+ * Samples perpendicular luminance profiles across the image to snap control points
+ * directly into the real shadow valleys of the skin creases.
+ */
+export function snapPointsToCreaseValleys(
+  imageSource: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
+  points: Point2D[],
+  searchRadiusPercent = 2.5
+): Point2D[] {
+  if (typeof document === 'undefined' || !points || points.length < 2) {
+    return points;
+  }
+
+  try {
+    const width =
+      'videoWidth' in imageSource && (imageSource as any).videoWidth
+        ? (imageSource as any).videoWidth
+        : 'naturalWidth' in imageSource && (imageSource as any).naturalWidth
+        ? (imageSource as any).naturalWidth
+        : imageSource.width || 600;
+    const height =
+      'videoHeight' in imageSource && (imageSource as any).videoHeight
+        ? (imageSource as any).videoHeight
+        : 'naturalHeight' in imageSource && (imageSource as any).naturalHeight
+        ? (imageSource as any).naturalHeight
+        : imageSource.height || 800;
+
+    if (!width || !height) return points;
+
+    // Use a fast downsampled canvas for smooth luminance profile extraction
+    const sampleW = Math.min(width, 480);
+    const sampleH = Math.round((height / width) * sampleW);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = sampleW;
+    canvas.height = sampleH;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return points;
+
+    ctx.drawImage(imageSource as CanvasImageSource, 0, 0, sampleW, sampleH);
+    const imgData = ctx.getImageData(0, 0, sampleW, sampleH);
+    const data = imgData.data;
+
+    const getLuminance = (px: number, py: number): number => {
+      const ix = Math.max(0, Math.min(sampleW - 1, Math.round(px)));
+      const iy = Math.max(0, Math.min(sampleH - 1, Math.round(py)));
+      const idx = (iy * sampleW + ix) * 4;
+      return 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+    };
+
+    const snapped: Point2D[] = points.map((pt, i) => {
+      const isEndpoint = i === 0 || i === points.length - 1;
+      const stepRadius = isEndpoint ? searchRadiusPercent * 0.4 : searchRadiusPercent;
+
+      const prev = points[Math.max(0, i - 1)];
+      const next = points[Math.min(points.length - 1, i + 1)];
+      const dx = next.x - prev.x;
+      const dy = next.y - prev.y;
+      const len = Math.hypot(dx, dy);
+      if (len < 0.001) return { ...pt };
+
+      // Perpendicular normal vector in normalized coordinates
+      const nx = -dy / len;
+      const ny = dx / len;
+
+      let minLum = Infinity;
+      let bestOffset = 0;
+      let baseLum = 0;
+
+      const samples = 11;
+      for (let s = -Math.floor(samples / 2); s <= Math.floor(samples / 2); s++) {
+        const offsetPercent = (s / (samples / 2)) * stepRadius;
+        const testX = pt.x + nx * offsetPercent;
+        const testY = pt.y + ny * offsetPercent;
+
+        const px = (testX / 100) * sampleW;
+        const py = (testY / 100) * sampleH;
+        const lum = getLuminance(px, py);
+
+        if (s === 0) baseLum = lum;
+        if (lum < minLum) {
+          minLum = lum;
+          bestOffset = offsetPercent;
+        }
+      }
+
+      // Only snap if there is a distinct valley (crease groove darker than skin)
+      if (baseLum - minLum >= 6) {
+        return {
+          x: Math.round((pt.x + nx * bestOffset) * 10) / 10,
+          y: Math.round((pt.y + ny * bestOffset) * 10) / 10,
+        };
+      }
+      return { ...pt };
+    });
+
+    // Gentle 3-point smoothing
+    return snapped.map((pt, i) => {
+      if (i === 0 || i === snapped.length - 1) return pt;
+      return {
+        x: Math.round((snapped[i - 1].x * 0.2 + pt.x * 0.6 + snapped[i + 1].x * 0.2) * 10) / 10,
+        y: Math.round((snapped[i - 1].y * 0.2 + pt.y * 0.6 + snapped[i + 1].y * 0.2) * 10) / 10,
+      };
+    });
+  } catch {
+    return points;
+  }
+}
+
+/**
  * Detects hand landmarks from an image element (HTMLImageElement) or ImageBitmap
+ * and snaps creases directly onto visible palm skin lines.
  */
 export async function detectHandFromImage(
   imageSource: HTMLImageElement | HTMLCanvasElement | ImageBitmap
@@ -240,12 +370,29 @@ export async function detectHandFromImage(
     const derived = deriveCreasesFromLandmarks(rawLms);
     const confidence = result.handedness?.[0]?.[0]?.score || 0.95;
 
+    // Apply active ridge snapping using pixel contrast from the image
+    const snappedHeart = snapPointsToCreaseValleys(imageSource, derived.creases.heartLine);
+    const snappedHead = snapPointsToCreaseValleys(imageSource, derived.creases.headLine);
+    const snappedLife = snapPointsToCreaseValleys(imageSource, derived.creases.lifeLine);
+    const snappedFate = snapPointsToCreaseValleys(imageSource, derived.creases.fateLine);
+
     return {
       landmarks: derived.landmarks,
       handedness: derived.handedness,
       confidence,
-      creases: derived.creases,
-      svgPaths: derived.svgPaths,
+      creases: {
+        heartLine: snappedHeart,
+        headLine: snappedHead,
+        lifeLine: snappedLife,
+        fateLine: snappedFate,
+      },
+      svgPaths: {
+        heartLine: pointsToSmoothSvgPath(snappedHeart),
+        headLine: pointsToSmoothSvgPath(snappedHead),
+        lifeLine: pointsToSmoothSvgPath(snappedLife),
+        fateLine: pointsToSmoothSvgPath(snappedFate),
+        palmOutline: derived.svgPaths.palmOutline,
+      },
     };
   } catch (error) {
     console.warn('MediaPipe hand detection encountered an error:', error);
@@ -273,3 +420,4 @@ export async function detectHandFromUrl(imageUrl: string): Promise<MediaPipeHand
     img.src = imageUrl;
   });
 }
+
