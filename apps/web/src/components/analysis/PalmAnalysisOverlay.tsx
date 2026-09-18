@@ -35,15 +35,30 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
     }
   };
 
+  const [dynamicCreases, setDynamicCreases] = useState<{
+    heartLine?: string;
+    headLine?: string;
+    lifeLine?: string;
+    fateLine?: string;
+  } | null>(null);
+
   useEffect(() => {
-    if (!landmarks && imageDataUrl) {
+    if (imageDataUrl) {
       detectHandFromUrl(imageDataUrl).then((res) => {
         if (res?.landmarks) {
           setLandmarks(res.landmarks);
+          if (res.svgPaths) {
+            setDynamicCreases({
+              heartLine: res.svgPaths.heartLine,
+              headLine: res.svgPaths.headLine,
+              lifeLine: res.svgPaths.lifeLine,
+              fateLine: res.svgPaths.fateLine,
+            });
+          }
         }
       });
     }
-  }, [imageDataUrl, landmarks]);
+  }, [imageDataUrl]);
 
   // Alignment calibration offsets
   const [offsetX, setOffsetX] = useState(0);
@@ -207,12 +222,12 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
               {/* Transform group for user/AI calibrated alignment */}
               <g
-                transform={`translate(${50 + offsetX * 0.2}, ${50 + offsetY * 0.2}) rotate(${rotation}) scale(${scale}) translate(-50, -50)`}
+                transform={`translate(${50 + offsetX}, ${50 + offsetY}) rotate(${rotation}) scale(${scale}) translate(-50, -50)`}
                 style={{ transition: 'transform 0.15s ease-out' }}
               >
                 {lines.heart?.detected && (
                   <path
-                    d={lines.heart.svgPath || defaultHeartPath}
+                    d={dynamicCreases?.heartLine || lines.heart.svgPath || defaultHeartPath}
                     fill="none"
                     stroke="#F43F5E"
                     strokeWidth={selectedLine === 'heart' ? '3.4' : '1.8'}
@@ -227,7 +242,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.head?.detected && (
                   <path
-                    d={lines.head.svgPath || defaultHeadPath}
+                    d={dynamicCreases?.headLine || lines.head.svgPath || defaultHeadPath}
                     fill="none"
                     stroke="#38BDF8"
                     strokeWidth={selectedLine === 'head' ? '3.4' : '1.8'}
@@ -242,7 +257,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.life?.detected && (
                   <path
-                    d={lines.life.svgPath || defaultLifePath}
+                    d={dynamicCreases?.lifeLine || lines.life.svgPath || defaultLifePath}
                     fill="none"
                     stroke="#10B981"
                     strokeWidth={selectedLine === 'life' ? '3.4' : '1.8'}
@@ -257,7 +272,7 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
 
                 {lines.fate?.detected && (
                   <path
-                    d={lines.fate.svgPath || defaultFatePath}
+                    d={dynamicCreases?.fateLine || lines.fate.svgPath || defaultFatePath}
                     fill="none"
                     stroke="#F59E0B"
                     strokeWidth={selectedLine === 'fate' ? '3.2' : '1.6'}
@@ -504,13 +519,13 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             {/* Shift Up/Down */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
-                <span>Vertical Position (Up/Down)</span>
-                <span>{offsetY}px</span>
+                <span>Vertical Position (Up / Down)</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{offsetY > 0 ? `+${offsetY}%` : `${offsetY}%`}</span>
               </div>
               <input
                 type="range"
-                min="-25"
-                max="25"
+                min="-45"
+                max="45"
                 value={offsetY}
                 onChange={(e) => setOffsetY(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
@@ -520,13 +535,13 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             {/* Shift Left/Right */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
-                <span>Horizontal Position (Left/Right)</span>
-                <span>{offsetX}px</span>
+                <span>Horizontal Position (Left / Right)</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{offsetX > 0 ? `+${offsetX}%` : `${offsetX}%`}</span>
               </div>
               <input
                 type="range"
-                min="-25"
-                max="25"
+                min="-45"
+                max="45"
                 value={offsetX}
                 onChange={(e) => setOffsetX(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
@@ -536,13 +551,13 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             {/* Scale Hand Size */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
-                <span>Line Spread / Hand Size</span>
-                <span>{scale.toFixed(2)}x</span>
+                <span>Line Spread / Hand Scale</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{scale.toFixed(2)}x</span>
               </div>
               <input
                 type="range"
-                min="0.75"
-                max="1.35"
+                min="0.50"
+                max="1.75"
                 step="0.05"
                 value={scale}
                 onChange={(e) => setScale(Number(e.target.value))}
@@ -554,38 +569,78 @@ export const PalmAnalysisOverlay: React.FC<PalmAnalysisOverlayProps> = ({
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px' }}>
                 <span>Tilt Angle</span>
-                <span>{rotation}°</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent-lavender)' }}>{rotation}°</span>
               </div>
               <input
                 type="range"
-                min="-20"
-                max="20"
+                min="-45"
+                max="45"
                 value={rotation}
                 onChange={(e) => setRotation(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--accent-violet)' }}
               />
             </div>
 
-            <button
-              onClick={() => {
-                setOffsetX(0);
-                setOffsetY(0);
-                setScale(1);
-                setRotation(0);
-              }}
-              style={{
-                alignSelf: 'flex-end',
-                background: 'transparent',
-                border: '1px solid var(--border-medium)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-secondary)',
-                fontSize: '11px',
-                padding: '4px 10px',
-                cursor: 'pointer',
-              }}
-            >
-              Reset Alignment
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  if (imageDataUrl) {
+                    detectHandFromUrl(imageDataUrl).then((res) => {
+                      if (res?.landmarks) {
+                        setLandmarks(res.landmarks);
+                        if (res.svgPaths) {
+                          setDynamicCreases({
+                            heartLine: res.svgPaths.heartLine,
+                            headLine: res.svgPaths.headLine,
+                            lifeLine: res.svgPaths.lifeLine,
+                            fateLine: res.svgPaths.fateLine,
+                          });
+                        }
+                      }
+                    });
+                  }
+                  setOffsetX(0);
+                  setOffsetY(0);
+                  setScale(1);
+                  setRotation(0);
+                }}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#38BDF8',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '5px 10px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <span>⚡ Auto-Fit Lines to Hand</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setOffsetX(0);
+                  setOffsetY(0);
+                  setScale(1);
+                  setRotation(0);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '11px',
+                  padding: '5px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Reset Calibration
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>

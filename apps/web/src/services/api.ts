@@ -54,6 +54,24 @@ export async function uploadPalmScan(
       if (mediaPipeResult?.landmarks) {
         data.analysis.landmarks = mediaPipeResult.landmarks;
         data.analysis.palmBoundary = mediaPipeResult.svgPaths.palmOutline;
+        if (data.analysis.lines) {
+          if (mediaPipeResult.svgPaths.heartLine && data.analysis.lines.heart) {
+            data.analysis.lines.heart.svgPath = mediaPipeResult.svgPaths.heartLine;
+            data.analysis.lines.heart.points = mediaPipeResult.creases.heartLine;
+          }
+          if (mediaPipeResult.svgPaths.headLine && data.analysis.lines.head) {
+            data.analysis.lines.head.svgPath = mediaPipeResult.svgPaths.headLine;
+            data.analysis.lines.head.points = mediaPipeResult.creases.headLine;
+          }
+          if (mediaPipeResult.svgPaths.lifeLine && data.analysis.lines.life) {
+            data.analysis.lines.life.svgPath = mediaPipeResult.svgPaths.lifeLine;
+            data.analysis.lines.life.points = mediaPipeResult.creases.lifeLine;
+          }
+          if (mediaPipeResult.svgPaths.fateLine && data.analysis.lines.fate) {
+            data.analysis.lines.fate.svgPath = mediaPipeResult.svgPaths.fateLine;
+            data.analysis.lines.fate.points = mediaPipeResult.creases.fateLine;
+          }
+        }
       }
       return data;
     }
