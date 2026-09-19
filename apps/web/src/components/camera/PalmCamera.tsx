@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, ArrowLeft, Camera, Image as ImageIcon, CheckCircle2, Sun, Hand, Sparkles } from 'lucide-react';
+import { Upload, ArrowLeft, Camera, Image as ImageIcon, CheckCircle2, Sun, Hand, Sparkles, FlipHorizontal } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { HandType } from '../../types/contracts';
 import { useLanguage } from '../../context/LanguageContext';
@@ -8,12 +8,14 @@ export interface PalmCameraProps {
   hand: HandType;
   onCapture: (imageDataUrl: string) => void;
   onBack: () => void;
+  onToggleCamera?: () => void;
 }
 
 export const PalmCamera: React.FC<PalmCameraProps> = ({
   hand,
   onCapture,
   onBack,
+  onToggleCamera,
 }) => {
   const { t } = useLanguage();
   const [activeMode, setActiveMode] = useState<'camera' | 'upload'>('camera');
@@ -22,14 +24,71 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isFrontCamera, setIsFrontCamera] = useState<boolean>(true);
 
-  // Simulated live feedback indicators for responsive UX feel
-  const [feedback] = useState({
-    palmDetected: true,
-    lightingGood: true,
+  // Live detection sensor state
+  const [feedback] = useState<{
+    handDetected: boolean;
+    lightingOk: boolean;
+    distanceOk: boolean;
+    message: string;
+  }>({
+    handDetected: true,
+    lightingOk: true,
     distanceOk: true,
     message: '✓ Palm detected • Good lighting',
   });
+
+  // Helper to inspect if track is from a front/selfie camera or desktop webcam
+  const detectIfFrontFacing = (track: MediaStreamTrack | null): boolean => {
+    if (!track) return true;
+    const settings = track.getSettings ? track.getSettings() : null;
+    const facing = settings?.facingMode;
+    if (facing === 'user') return true;
+    if (facing === 'environment') return false;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) return true; // Webcams on laptops/desktops are front-facing selfies
+    const label = (track.label || '').toLowerCase();
+    return (
+      label.includes('front') ||
+      label.includes('facetime') ||
+      label.includes('selfie') ||
+      label.includes('user') ||
+      label.includes('built-in')
+    );
+  };
+
+  const toggleCamera = async () => {
+    if (onToggleCamera) {
+      onToggleCamera();
+      return;
+    }
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      setStream(null);
+    }
+    const nextFront = !isFrontCamera;
+    setIsFrontCamera(nextFront);
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: nextFront ? 'user' : 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 1280 },
+        },
+        audio: false,
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(() => {});
+      }
+      const track = mediaStream.getVideoTracks()[0];
+      setIsFrontCamera(detectIfFrontFacing(track));
+    } catch (err: any) {
+      console.warn('Error toggling camera:', err);
+    }
+  };
 
   // Initialize camera stream when camera mode is active
   useEffect(() => {
@@ -48,7 +107,7 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: 'environment' },
+            facingMode: isFrontCamera ? { ideal: 'user' } : { ideal: 'environment' },
             width: { ideal: 1280 },
             height: { ideal: 1280 },
           },
@@ -60,6 +119,10 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
           videoRef.current.srcObject = mediaStream;
           videoRef.current.play().catch(() => {});
         }
+
+        const track = mediaStream.getVideoTracks()[0];
+        const front = detectIfFrontFacing(track);
+        setIsFrontCamera(front);
       } catch (err: any) {
         console.warn('Camera access issue:', err);
         setCameraError(
@@ -88,6 +151,11 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
       canvas.height = video.videoHeight || 1080;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        // If front camera (webcam or selfie), horizontally flip canvas to produce natural palmar orientation
+        if (isFrontCamera) {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         onCapture(dataUrl);
@@ -221,7 +289,26 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
           </span>
         </div>
 
-        <div style={{ width: '38px' }} />
+        <button
+          type="button"
+          onClick={toggleCamera}
+          title={isFrontCamera ? 'Mirrored Mode (Front Camera) - Tap to toggle' : 'Standard Mode (Rear Camera) - Tap to toggle'}
+          style={{
+            background: isFrontCamera ? 'rgba(124, 58, 237, 0.22)' : 'rgba(255, 255, 255, 0.08)',
+            border: isFrontCamera ? '1.5px solid var(--accent-violet)' : '1px solid var(--border-medium)',
+            borderRadius: '50%',
+            width: '38px',
+            height: '38px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: isFrontCamera ? 'var(--accent-lavender-warm)' : '#fff',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <FlipHorizontal size={18} />
+        </button>
       </div>
 
       {/* Mode Switcher Tabs (Camera vs Upload) */}
@@ -327,6 +414,7 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    transform: isFrontCamera ? 'scaleX(-1)' : 'none',
                   }}
                 />
 

@@ -5,7 +5,7 @@ import { compressPalmImage } from '../../services/ImageCompressor';
 import { detectHandFromImage } from '../../services/mediapipeService';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { CheckCircle2, RefreshCw, ArrowRight, Sparkles, Upload } from 'lucide-react';
+import { CheckCircle2, RefreshCw, ArrowRight, Sparkles, Upload, FlipHorizontal } from 'lucide-react';
 
 export interface ImagePreviewProps {
   imageDataUrl: string;
@@ -101,10 +101,30 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
+        setHandMismatchDismissed(false);
         setCurrentImageData(event.target.result as string);
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFlipImage = () => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0);
+        const flippedUrl = canvas.toDataURL('image/jpeg', 0.92);
+        setHandMismatchDismissed(false);
+        setCurrentImageData(flippedUrl);
+      }
+    };
+    img.src = currentImageData;
   };
 
   const isHandMissing = qualityResult && (!qualityResult.handDetected || qualityResult.aspectScore < 0.4);
@@ -336,6 +356,14 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                   setHandSwitchedNotice(
                     `✓ Switched to ${detectedHand === 'right' ? 'Right' : 'Left'} Palm!`
                   );
+                  if (compressedData && qualityResult) {
+                    onProceed(
+                      compressedData.blob,
+                      compressedData.dataUrl,
+                      qualityResult,
+                      detectedHand
+                    );
+                  }
                 }
               }}
               style={{
@@ -349,23 +377,36 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
               SWITCH TO {detectedHand === 'right' ? 'RIGHT' : 'LEFT'} PALM & PROCEED
             </Button>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={handleFlipImage}
+                leftIcon={<FlipHorizontal size={15} />}
+                style={{ fontSize: '12px', padding: '10px 4px' }}
+                title="Mirror photo if taken with an unmirrored selfie camera"
+              >
+                FLIP PHOTO
+              </Button>
+
               <Button
                 variant="outline"
                 fullWidth
                 onClick={onRetake}
-                leftIcon={<RefreshCw size={16} />}
+                leftIcon={<RefreshCw size={15} />}
+                style={{ fontSize: '12px', padding: '10px 4px' }}
               >
-                RETAKE PHOTO
+                RETAKE
               </Button>
 
               <Button
                 variant="secondary"
                 fullWidth
                 onClick={() => fileInputRef.current?.click()}
-                leftIcon={<Upload size={16} />}
+                leftIcon={<Upload size={15} />}
+                style={{ fontSize: '12px', padding: '10px 4px' }}
               >
-                USE ANOTHER
+                ANOTHER
               </Button>
             </div>
 

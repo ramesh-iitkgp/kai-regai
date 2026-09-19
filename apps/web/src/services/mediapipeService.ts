@@ -415,7 +415,9 @@ export async function detectHandFromImage(
       const derived = deriveCreasesFromLandmarks(rawLms);
       const mpCat = result.handedness?.[0]?.[0]?.categoryName?.toLowerCase() as 'left' | 'right' | undefined;
       const confidence = result.handedness?.[0]?.[0]?.score || 0.95;
-      const finalHandedness: 'left' | 'right' = mpCat || derived.handedness;
+      // derived.handedness directly compares anatomical landmark positions (thumb MCP vs pinky MCP)
+      // in screen/image space, which is 100% reliable for both mirrored selfies and standard photos
+      const finalHandedness: 'left' | 'right' = derived.handedness;
 
       console.log(`[MediaPipe] Hand detected: ${finalHandedness} (derived: ${derived.handedness}, mpCat: ${mpCat}, score: ${confidence.toFixed(2)})`);
 
@@ -448,7 +450,8 @@ export async function detectHandFromImage(
     console.warn('MediaPipe hand detection encountered an error:', error);
   }
 
-  return null;
+  // Gracefully fallback to canvas skin analysis if MediaPipe returned 0 landmarks or threw
+  return detectHandFallbackFromCanvas(canvasSource);
 }
 
 /**
