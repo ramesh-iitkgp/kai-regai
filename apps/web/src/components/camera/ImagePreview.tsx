@@ -67,9 +67,8 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         if (isMounted) {
           setQualityResult(quality);
           setCompressedData(compressed);
-          const detected = mpResult?.handedness || quality?.detectedHand;
-          if (detected) {
-            setDetectedHand(detected);
+          if (mpResult?.handedness) {
+            setDetectedHand(mpResult.handedness);
           }
         }
       } catch (err) {

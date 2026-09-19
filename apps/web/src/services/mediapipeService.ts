@@ -3,35 +3,43 @@ import type { Point2D } from '../types/contracts';
 
 let landmarkerPromise: Promise<HandLandmarker> | null = null;
 
-// Initialize MediaPipe HandLandmarker singleton with GPU -> CPU graceful fallback
+// Initialize MediaPipe HandLandmarker singleton with local files & GPU -> CPU graceful fallback
 export async function getHandLandmarker(): Promise<HandLandmarker> {
   if (!landmarkerPromise) {
     landmarkerPromise = (async () => {
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
-      );
+      let vision;
       try {
-        return await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-            delegate: 'GPU',
-          },
-          runningMode: 'IMAGE',
-          numHands: 1,
-        });
-      } catch (gpuErr) {
-        console.warn('MediaPipe GPU initialization failed, falling back to CPU delegate:', gpuErr);
-        return await HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-            delegate: 'CPU',
-          },
-          runningMode: 'IMAGE',
-          numHands: 1,
-        });
+        // Try local WASM first (hosted in public/wasm/)
+        vision = await FilesetResolver.forVisionTasks('/wasm');
+      } catch (localWasmErr) {
+        console.warn('Local WASM failed, falling back to CDN:', localWasmErr);
+        vision = await FilesetResolver.forVisionTasks(
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+        );
       }
+
+      const modelCandidates = [
+        '/models/hand_landmarker.task',
+        'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+      ];
+
+      for (const modelPath of modelCandidates) {
+        for (const delegate of ['GPU', 'CPU'] as const) {
+          try {
+            return await HandLandmarker.createFromOptions(vision, {
+              baseOptions: {
+                modelAssetPath: modelPath,
+                delegate,
+              },
+              runningMode: 'IMAGE',
+              numHands: 1,
+            });
+          } catch (initErr) {
+            console.warn(`MediaPipe init (${delegate} @ ${modelPath}) failed:`, initErr);
+          }
+        }
+      }
+      throw new Error('All HandLandmarker initialization attempts failed');
     })();
   }
   return landmarkerPromise;
@@ -372,46 +380,75 @@ export function snapPointsToCreaseValleys(
 export async function detectHandFromImage(
   imageSource: HTMLImageElement | HTMLCanvasElement | ImageBitmap
 ): Promise<MediaPipeHandResult | null> {
+  // Ensure image is fully drawn onto an in-memory canvas for reliable Safari WebGL texture extraction
+  let canvasSource: HTMLCanvasElement;
+  if (typeof document !== 'undefined' && imageSource instanceof HTMLCanvasElement) {
+    canvasSource = imageSource;
+  } else if (typeof document !== 'undefined') {
+    canvasSource = document.createElement('canvas');
+    canvasSource.width =
+      'videoWidth' in imageSource && (imageSource as any).videoWidth
+        ? (imageSource as any).videoWidth
+        : 'naturalWidth' in imageSource && (imageSource as any).naturalWidth
+        ? (imageSource as any).naturalWidth
+        : imageSource.width || 640;
+    canvasSource.height =
+      'videoHeight' in imageSource && (imageSource as any).videoHeight
+        ? (imageSource as any).videoHeight
+        : 'naturalHeight' in imageSource && (imageSource as any).naturalHeight
+        ? (imageSource as any).naturalHeight
+        : imageSource.height || 640;
+    const ctx = canvasSource.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(imageSource as CanvasImageSource, 0, 0, canvasSource.width, canvasSource.height);
+    }
+  } else {
+    return null;
+  }
+
   try {
     const landmarker = await getHandLandmarker();
-    const result = landmarker.detect(imageSource);
+    const result = landmarker.detect(canvasSource);
 
-    if (!result.landmarks || result.landmarks.length === 0) {
-      return detectHandFallbackFromCanvas(imageSource);
+    if (result.landmarks && result.landmarks.length > 0) {
+      const rawLms = result.landmarks[0];
+      const derived = deriveCreasesFromLandmarks(rawLms);
+      const mpCat = result.handedness?.[0]?.[0]?.categoryName?.toLowerCase() as 'left' | 'right' | undefined;
+      const confidence = result.handedness?.[0]?.[0]?.score || 0.95;
+      const finalHandedness: 'left' | 'right' = mpCat || derived.handedness;
+
+      console.log(`[MediaPipe] Hand detected: ${finalHandedness} (derived: ${derived.handedness}, mpCat: ${mpCat}, score: ${confidence.toFixed(2)})`);
+
+      // Apply active ridge snapping using pixel contrast from the image
+      const snappedHeart = snapPointsToCreaseValleys(canvasSource, derived.creases.heartLine);
+      const snappedHead = snapPointsToCreaseValleys(canvasSource, derived.creases.headLine);
+      const snappedLife = snapPointsToCreaseValleys(canvasSource, derived.creases.lifeLine);
+      const snappedFate = snapPointsToCreaseValleys(canvasSource, derived.creases.fateLine);
+
+      return {
+        landmarks: derived.landmarks,
+        handedness: finalHandedness,
+        confidence,
+        creases: {
+          heartLine: snappedHeart,
+          headLine: snappedHead,
+          lifeLine: snappedLife,
+          fateLine: snappedFate,
+        },
+        svgPaths: {
+          heartLine: pointsToSmoothSvgPath(snappedHeart),
+          headLine: pointsToSmoothSvgPath(snappedHead),
+          lifeLine: pointsToSmoothSvgPath(snappedLife),
+          fateLine: pointsToSmoothSvgPath(snappedFate),
+          palmOutline: derived.svgPaths.palmOutline,
+        },
+      };
     }
-
-    const rawLms = result.landmarks[0];
-    const derived = deriveCreasesFromLandmarks(rawLms);
-    const confidence = result.handedness?.[0]?.[0]?.score || 0.95;
-
-    // Apply active ridge snapping using pixel contrast from the image
-    const snappedHeart = snapPointsToCreaseValleys(imageSource, derived.creases.heartLine);
-    const snappedHead = snapPointsToCreaseValleys(imageSource, derived.creases.headLine);
-    const snappedLife = snapPointsToCreaseValleys(imageSource, derived.creases.lifeLine);
-    const snappedFate = snapPointsToCreaseValleys(imageSource, derived.creases.fateLine);
-
-    return {
-      landmarks: derived.landmarks,
-      handedness: derived.handedness,
-      confidence,
-      creases: {
-        heartLine: snappedHeart,
-        headLine: snappedHead,
-        lifeLine: snappedLife,
-        fateLine: snappedFate,
-      },
-      svgPaths: {
-        heartLine: pointsToSmoothSvgPath(snappedHeart),
-        headLine: pointsToSmoothSvgPath(snappedHead),
-        lifeLine: pointsToSmoothSvgPath(snappedLife),
-        fateLine: pointsToSmoothSvgPath(snappedFate),
-        palmOutline: derived.svgPaths.palmOutline,
-      },
-    };
   } catch (error) {
-    console.warn('MediaPipe hand detection encountered an error, trying canvas fallback:', error);
-    return detectHandFallbackFromCanvas(imageSource);
+    console.warn('MediaPipe hand detection encountered an error:', error);
   }
+
+  return null;
 }
 
 /**

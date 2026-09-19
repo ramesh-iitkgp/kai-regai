@@ -204,19 +204,6 @@ export async function validatePalmImageQuality(
     warnings.push('No palm lines visible. Please ensure the inner side (palm) of your hand is facing the camera, not the back of your hand.');
   }
 
-  let detectedHand: 'left' | 'right' | undefined;
-  if (handDetected) {
-    const leftProtrusion = midX - minLowerSkinX;
-    const rightProtrusion = maxLowerSkinX - midX;
-    if (leftProtrusion > rightProtrusion * 1.08 || lowerThumbZoneLeft > lowerThumbZoneRight * 1.15) {
-      detectedHand = 'right'; // Thumb on left side of image -> Right Palm facing camera
-    } else if (rightProtrusion > leftProtrusion * 1.08 || lowerThumbZoneRight > lowerThumbZoneLeft * 1.15) {
-      detectedHand = 'left'; // Thumb on right side of image -> Left Palm facing camera
-    } else {
-      detectedHand = qLeft >= qRight ? 'right' : 'left';
-    }
-  }
-
   const isValid = handDetected && aspectScore >= 0.5 && sharpnessScore >= 0.42 && lightingScore >= 0.42 && warnings.length === 0;
 
   let guidanceText = '';
@@ -227,7 +214,6 @@ export async function validatePalmImageQuality(
   return {
     isValid,
     handDetected,
-    detectedHand,
     sharpnessScore: Number(sharpnessScore.toFixed(2)),
     lightingScore: Number(lightingScore.toFixed(2)),
     aspectScore: Number(aspectScore.toFixed(2)),
