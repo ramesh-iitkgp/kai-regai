@@ -59,6 +59,14 @@ export async function validatePalmImageQuality(
   const centerBoxY2 = height * 0.75;
 
   const gray = new Float32Array(totalPixels);
+  let minSkinX = width;
+  let maxSkinX = 0;
+  let minSkinY = height;
+  let maxSkinY = 0;
+  let lowerThumbZoneLeft = 0;
+  let lowerThumbZoneRight = 0;
+  let minLowerSkinX = width;
+  let maxLowerSkinX = 0;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -73,7 +81,6 @@ export async function validatePalmImageQuality(
       totalLuminance += lum;
 
       // Robust Skin Tone Detector across diverse skin tones:
-      // In RGB space: R > G, G > B, (R - G) > 12, R > 65, and difference between max and min > 15
       const maxVal = Math.max(r, g, b);
       const minVal = Math.min(r, g, b);
       const isSkin = (
@@ -89,10 +96,27 @@ export async function validatePalmImageQuality(
 
       if (isSkin) {
         skinPixelCount++;
+        if (x < minSkinX) minSkinX = x;
+        if (x > maxSkinX) maxSkinX = x;
+        if (y < minSkinY) minSkinY = y;
+        if (y > maxSkinY) maxSkinY = y;
+
         if (y < midY) qTop++;
         else qBottom++;
         if (x < midX) qLeft++;
         else qRight++;
+
+        // Track lower-mid palm thenar/thumb region
+        if (y >= height * 0.38 && y <= height * 0.85) {
+          if (x < midX) {
+            lowerThumbZoneLeft++;
+            if (x < minLowerSkinX) minLowerSkinX = x;
+          } else {
+            lowerThumbZoneRight++;
+            if (x > maxLowerSkinX) maxLowerSkinX = x;
+          }
+        }
+
         if (x >= centerBoxX1 && x <= centerBoxX2 && y >= centerBoxY1 && y <= centerBoxY2) {
           qCenter++;
         }
@@ -180,6 +204,19 @@ export async function validatePalmImageQuality(
     warnings.push('No palm lines visible. Please ensure the inner side (palm) of your hand is facing the camera, not the back of your hand.');
   }
 
+  let detectedHand: 'left' | 'right' | undefined;
+  if (handDetected) {
+    const leftProtrusion = midX - minLowerSkinX;
+    const rightProtrusion = maxLowerSkinX - midX;
+    if (leftProtrusion > rightProtrusion * 1.08 || lowerThumbZoneLeft > lowerThumbZoneRight * 1.15) {
+      detectedHand = 'right'; // Thumb on left side of image -> Right Palm facing camera
+    } else if (rightProtrusion > leftProtrusion * 1.08 || lowerThumbZoneRight > lowerThumbZoneLeft * 1.15) {
+      detectedHand = 'left'; // Thumb on right side of image -> Left Palm facing camera
+    } else {
+      detectedHand = qLeft >= qRight ? 'right' : 'left';
+    }
+  }
+
   const isValid = handDetected && aspectScore >= 0.5 && sharpnessScore >= 0.42 && lightingScore >= 0.42 && warnings.length === 0;
 
   let guidanceText = '';
@@ -190,6 +227,7 @@ export async function validatePalmImageQuality(
   return {
     isValid,
     handDetected,
+    detectedHand,
     sharpnessScore: Number(sharpnessScore.toFixed(2)),
     lightingScore: Number(lightingScore.toFixed(2)),
     aspectScore: Number(aspectScore.toFixed(2)),

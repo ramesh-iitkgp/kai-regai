@@ -327,7 +327,6 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    transform: hand === 'left' ? 'scaleX(-1)' : 'none',
                   }}
                 />
 
@@ -350,6 +349,7 @@ export const PalmCamera: React.FC<PalmCameraProps> = ({
                       height: 'auto',
                       opacity: 0.88,
                       filter: 'drop-shadow(0 0 12px rgba(124, 58, 237, 0.45))',
+                      transform: hand === 'left' ? 'scaleX(-1)' : 'none',
                     }}
                   >
                     {/* Palm outline */}

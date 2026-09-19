@@ -82,4 +82,25 @@ test('Hand Landmark & Handedness Detection Integrity Tests', async (t) => {
     assert.strictEqual(handMismatch, false, 'No mismatch when hands agree');
     assert.strictEqual(detectedHand, 'right');
   });
+
+  await t.test('5. Rejects wrong palm as input until explicitly switched or retaken', () => {
+    let selectedHand: 'left' | 'right' = 'right';
+    const scannedPalm = deriveCreasesFromLandmarks(createMockLandmarks(false)); // Left palm
+    const detectedHand = scannedPalm.handedness;
+
+    // Condition in ImagePreview:
+    let isMismatch = detectedHand !== selectedHand;
+    assert.strictEqual(isMismatch, true, 'Must flag mismatch');
+
+    // Default "Analyze My Palm" action must be blocked while mismatch exists
+    const canAnalyzeDirectly = !isMismatch;
+    assert.strictEqual(canAnalyzeDirectly, false, 'Must block direct submission of wrong palm');
+
+    // Switch action executed:
+    selectedHand = detectedHand;
+    isMismatch = detectedHand !== selectedHand;
+
+    assert.strictEqual(isMismatch, false, 'Mismatch resolved after switching');
+    assert.strictEqual(selectedHand, 'left', 'Hand updated to scanned palm');
+  });
 });

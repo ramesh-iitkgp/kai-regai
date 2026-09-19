@@ -3,6 +3,7 @@ export type HandType = 'left' | 'right';
 export interface ImageQualityResult {
   isValid: boolean;
   handDetected: boolean;
+  detectedHand?: HandType;
   sharpnessScore: number; // 0 to 1
   lightingScore: number;  // 0 to 1
   aspectScore: number;    // 0 to 1

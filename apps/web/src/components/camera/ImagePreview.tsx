@@ -67,8 +67,9 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         if (isMounted) {
           setQualityResult(quality);
           setCompressedData(compressed);
-          if (mpResult?.handedness) {
-            setDetectedHand(mpResult.handedness);
+          const detected = mpResult?.handedness || quality?.detectedHand;
+          if (detected) {
+            setDetectedHand(detected);
           }
         }
       } catch (err) {
@@ -134,8 +135,8 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
           margin: '0 auto',
           borderRadius: 'var(--radius-lg)',
           overflow: 'hidden',
-          border: '1.5px solid var(--border-medium)',
-          boxShadow: 'var(--shadow-lg)',
+          border: hasMismatch ? '2px solid #EF4444' : '1.5px solid var(--border-medium)',
+          boxShadow: hasMismatch ? '0 0 20px rgba(239, 68, 68, 0.25)' : 'var(--shadow-lg)',
           backgroundColor: '#000',
         }}
       >
@@ -153,6 +154,10 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
         <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
           {isCheckingQuality ? (
             <Badge variant="subtle">Checking photo...</Badge>
+          ) : hasMismatch ? (
+            <Badge variant="outline" style={{ background: 'rgba(239, 68, 68, 0.35)', color: '#FCA5A5', border: '1.5px solid rgba(239, 68, 68, 0.8)', fontWeight: 800 }}>
+              Wrong Palm Detected
+            </Badge>
           ) : qualityResult?.isValid ? (
             <Badge variant="emerald" icon={<CheckCircle2 size={13} />}>
               Clear View
@@ -174,14 +179,14 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
             <Badge
               variant="outline"
               style={{
-                background: 'rgba(245, 158, 11, 0.4)',
-                color: '#FDE68A',
-                border: '1px solid rgba(245, 158, 11, 0.7)',
+                background: 'rgba(239, 68, 68, 0.4)',
+                color: '#FECACA',
+                border: '1.5px solid rgba(239, 68, 68, 0.8)',
                 fontWeight: 800,
                 backdropFilter: 'blur(8px)',
               }}
             >
-              ⚠️ Detected {detectedHand === 'right' ? 'Right' : 'Left'} Palm
+              ⚠️ Scanned {detectedHand === 'right' ? 'Right' : 'Left'} Palm (Selected: {currentSelectedHand === 'right' ? 'Right' : 'Left'})
             </Badge>
           ) : (
             <Badge variant="subtle">
@@ -199,11 +204,11 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
             style={{
               padding: '10px 14px',
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.35)',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
               color: 'var(--accent-emerald)',
-              fontSize: '12.5px',
-              fontWeight: 600,
+              fontSize: '13px',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -215,84 +220,57 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
           </div>
         )}
 
-        {/* Graceful Hand Mismatch Notice */}
+        {/* Strict Hand Mismatch Warning Card */}
         {hasMismatch && (
           <div
             style={{
-              padding: '14px 16px',
+              padding: '16px',
               borderRadius: 'var(--radius-md)',
-              backgroundColor: 'rgba(245, 158, 11, 0.12)',
-              border: '1.5px solid rgba(245, 158, 11, 0.45)',
-              boxShadow: '0 4px 16px rgba(245, 158, 11, 0.15)',
-              marginBottom: '10px',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              border: '1.5px solid rgba(239, 68, 68, 0.5)',
+              boxShadow: '0 4px 18px rgba(239, 68, 68, 0.15)',
+              marginBottom: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <Sparkles size={16} style={{ color: 'var(--accent-amber)', flexShrink: 0 }} />
-              <span style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--accent-amber)' }}>
-                Hand Mismatch Notice
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '18px' }}>🛑</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 800, color: '#F87171' }}>
+                Wrong Palm Detected!
               </span>
             </div>
 
-            <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: 1.45, margin: '0 0 10px 0' }}>
-              Our scanner identified your <strong>{detectedHand === 'right' ? 'Right Palm' : 'Left Palm'}</strong>, but you previously selected <strong>{currentSelectedHand === 'right' ? 'Right Palm' : 'Left Palm'}</strong>.
+            <p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45, margin: '0 0 8px 0' }}>
+              You selected <strong>{currentSelectedHand === 'right' ? 'Right Palm' : 'Left Palm'}</strong>, but your photo shows your <strong>{detectedHand === 'right' ? 'Right Palm' : 'Left Palm'}</strong>.
             </p>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (detectedHand) {
-                    setCurrentSelectedHand(detectedHand);
-                    onSelectHand?.(detectedHand);
-                    setHandSwitchedNotice(
-                      `✓ Switched to ${detectedHand === 'right' ? 'Right' : 'Left'} Palm for optimal analysis`
-                    );
-                  }
-                }}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  backgroundColor: '#F59E0B',
-                  color: '#000000',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)',
-                }}
-              >
-                <CheckCircle2 size={14} />
-                <span>Switch to {detectedHand === 'right' ? 'Right' : 'Left'} Palm (Recommended)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setHandMismatchDismissed(true)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '12px',
-                  border: '1px solid var(--border-medium)',
-                  cursor: 'pointer',
-                }}
-              >
-                Proceed as {currentSelectedHand === 'right' ? 'Right' : 'Left'} Palm
-              </button>
-            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+              To ensure your palm lines match your astrological reading, please switch to your scanned palm or retake the photo.
+            </p>
           </div>
         )}
 
         {isCheckingQuality ? (
           <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '13px' }}>
             <Sparkles size={18} className="animate-spin" style={{ margin: '0 auto 8px', color: 'var(--accent-lavender)' }} />
-            <span>Checking line clarity...</span>
+            <span>Checking line clarity and palm orientation...</span>
+          </div>
+        ) : hasMismatch ? (
+          <div
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: 'var(--accent-amber)',
+              fontSize: '12.5px',
+              fontWeight: 600,
+            }}
+          >
+            <Sparkles size={15} style={{ flexShrink: 0 }} />
+            <span>Switch to {detectedHand === 'right' ? 'Right' : 'Left'} Palm below to unlock analysis</span>
           </div>
         ) : qualityResult && !qualityResult.isValid ? (
           <div
@@ -345,7 +323,72 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-        {qualityResult?.isValid ? (
+        {hasMismatch ? (
+          <>
+            {/* Primary Action when Wrong Palm: Switch & Proceed */}
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => {
+                if (detectedHand) {
+                  setCurrentSelectedHand(detectedHand);
+                  onSelectHand?.(detectedHand);
+                  setHandSwitchedNotice(
+                    `✓ Switched to ${detectedHand === 'right' ? 'Right' : 'Left'} Palm!`
+                  );
+                }
+              }}
+              style={{
+                backgroundColor: '#10B981',
+                borderColor: '#059669',
+                fontWeight: 800,
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+              }}
+              leftIcon={<CheckCircle2 size={18} />}
+            >
+              SWITCH TO {detectedHand === 'right' ? 'RIGHT' : 'LEFT'} PALM & PROCEED
+            </Button>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={onRetake}
+                leftIcon={<RefreshCw size={16} />}
+              >
+                RETAKE PHOTO
+              </Button>
+
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => fileInputRef.current?.click()}
+                leftIcon={<Upload size={16} />}
+              >
+                USE ANOTHER
+              </Button>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setHandMismatchDismissed(true)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: '11px',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                }}
+              >
+                Proceed as {currentSelectedHand === 'right' ? 'Right' : 'Left'} Palm anyway (mirrored selfie)
+              </button>
+            </div>
+          </>
+        ) : qualityResult?.isValid ? (
           <>
             <Button
               variant="primary"
@@ -355,7 +398,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
               disabled={!compressedData}
               rightIcon={<ArrowRight size={18} />}
             >
-              ANALYZE MY PALM
+              ANALYZE MY {currentSelectedHand === 'right' ? 'RIGHT' : 'LEFT'} PALM
             </Button>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
