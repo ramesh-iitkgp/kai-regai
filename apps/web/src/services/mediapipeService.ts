@@ -123,9 +123,17 @@ export function deriveCreasesFromLandmarks(rawLms: Landmark[]): {
   const pinkyMcp = lm[17];
 
   // Determine handedness: palmar view (palm facing camera)
-  // If thumb is to the left of pinky, it's typically a right hand (or unmirrored)
-  const isRight = thumbMcp.x < pinkyMcp.x;
-  const handedness = isRight ? 'right' : 'left';
+  // Upward axis from wrist (lm[0]) to middle finger knuckle (lm[9])
+  const vUp = { x: middleMcp.x - wrist.x, y: middleMcp.y - wrist.y };
+  // Thumb axis from wrist (lm[0]) to thumb knuckle (lm[2])
+  const vThumb = { x: thumbMcp.x - wrist.x, y: thumbMcp.y - wrist.y };
+  // 2D cross product in screen space (y downwards):
+  // When fingers point upwards (vUp.y < 0):
+  // Right palm has thumb to the left (vThumb.x < 0) -> cross < 0
+  // Left palm has thumb to the right (vThumb.x > 0) -> cross > 0
+  const cross = vUp.x * vThumb.y - vUp.y * vThumb.x;
+  const isRight = Math.abs(vUp.y) >= Math.abs(vUp.x) * 0.4 ? (thumbMcp.x < pinkyMcp.x) : (cross < 0);
+  const handedness: 'left' | 'right' = isRight ? 'right' : 'left';
 
   // Across knuckles vector (index knuckle to pinky knuckle):
   const vecKnuckles = {

@@ -292,6 +292,29 @@ export const ReadingResultView: React.FC<ReadingResultViewProps> = ({
         <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
           {reading.hand === 'right' ? 'Right Palm (Active Karma / कर्म)' : 'Left Palm (Innate Potential / प्रारब्ध)'} • {formatDate(reading.generatedAt)}
         </p>
+
+        {analysis?.handMismatch && (
+          <div
+            style={{
+              marginTop: '6px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: '16px',
+              padding: '3px 10px',
+              fontSize: '11px',
+              color: 'var(--accent-amber)',
+            }}
+          >
+            <Sparkles size={12} />
+            <span>
+              {analysis.handMismatchNotice ||
+                `Scanned ${analysis.detectedHand || reading.hand} Palm • Creases calibrated`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Segmented View Switcher: Crunch vs Palm Map vs Shastra */}

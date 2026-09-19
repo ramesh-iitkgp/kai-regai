@@ -25,7 +25,8 @@ import { detectHandFromUrl } from './mediapipeService';
 export async function uploadPalmScan(
   imageBlob: Blob,
   hand: HandType,
-  quality: ImageQualityResult
+  quality: ImageQualityResult,
+  detectedHandOverride?: HandType
 ): Promise<{ scanId: string; analysis: StructuredPalmAnalysis }> {
   // Pre-process image with MediaPipe on-device 21 landmark detector
   let mediaPipeResult: Awaited<ReturnType<typeof detectHandFromUrl>> = null;
@@ -37,10 +38,17 @@ export async function uploadPalmScan(
     console.warn('MediaPipe client-side detection fallback:', mpErr);
   }
 
+  const detectedHand: HandType = detectedHandOverride || mediaPipeResult?.handedness || hand;
+  const handMismatch = detectedHand !== hand;
+  const handMismatchNotice = handMismatch
+    ? `Notice: You selected ${hand === 'right' ? 'Right' : 'Left'} Palm, but our vision sensor detected your ${detectedHand === 'right' ? 'Right' : 'Left'} Palm. Crease lines and mounts have been calibrated to your scanned hand for accuracy.`
+    : undefined;
+
   try {
     const formData = new FormData();
     formData.append('image', imageBlob, 'palm.jpg');
     formData.append('hand', hand);
+    formData.append('detectedHand', detectedHand);
     formData.append('sessionId', getOrCreateSessionId());
     formData.append('qualityScore', quality.sharpnessScore.toString());
 
@@ -51,6 +59,11 @@ export async function uploadPalmScan(
 
     if (res.ok) {
       const data = await res.json();
+      data.analysis.detectedHand = detectedHand;
+      data.analysis.handMismatch = handMismatch;
+      if (handMismatchNotice) {
+        data.analysis.handMismatchNotice = handMismatchNotice;
+      }
       if (mediaPipeResult?.landmarks) {
         data.analysis.landmarks = mediaPipeResult.landmarks;
         data.analysis.palmBoundary = mediaPipeResult.svgPaths.palmOutline;
@@ -81,7 +94,6 @@ export async function uploadPalmScan(
 
   // Edge synthesis fallback with realistic organic points
   const scanId = 'scan_' + Date.now().toString(36);
-  const detectedHand = mediaPipeResult?.handedness || hand;
   const isRight = detectedHand === 'right';
 
   const heartPoints: Point2D[] = isRight ? [
@@ -216,6 +228,9 @@ export async function uploadPalmScan(
     detectedTags: ['Intuitive Thinker', 'High Vitality', 'Emotionally Warm', 'Vocation Driven'],
     landmarks: mediaPipeResult?.landmarks,
     palmBoundary: mediaPipeResult?.svgPaths.palmOutline,
+    detectedHand,
+    handMismatch,
+    handMismatchNotice,
   };
 
   return { scanId, analysis };

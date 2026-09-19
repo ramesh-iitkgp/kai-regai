@@ -120,14 +120,15 @@ export function App() {
   const handleProceedWithValidImage = async (
     blob: Blob,
     dataUrl: string,
-    quality: ImageQualityResult
+    quality: ImageQualityResult,
+    detectedHand?: HandType
   ) => {
     logAnalyticsEvent('photo_validated', { qualityScore: quality.sharpnessScore });
     setCapturedImageDataUrl(dataUrl);
     setCurrentStep('analyzing');
 
     try {
-      const result = await uploadPalmScan(blob, selectedHand, quality);
+      const result = await uploadPalmScan(blob, selectedHand, quality, detectedHand);
       setScanId(result.scanId);
       setAnalysis(result.analysis);
       logAnalyticsEvent('analysis_completed', { scanId: result.scanId });
@@ -311,6 +312,7 @@ export function App() {
               <ImagePreview
                 imageDataUrl={capturedImageDataUrl}
                 hand={selectedHand}
+                onSelectHand={(newHand) => setSelectedHand(newHand)}
                 onRetake={() => setCurrentStep('camera')}
                 onProceed={handleProceedWithValidImage}
               />

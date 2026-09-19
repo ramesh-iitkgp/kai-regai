@@ -161,6 +161,30 @@ export const FreePreviewScreen: React.FC<FreePreviewScreenProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Hand Mismatch Graceful Notice */}
+        {analysis.handMismatch && (
+          <div
+            style={{
+              marginTop: '12px',
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '11.5px',
+              color: 'var(--accent-amber)',
+            }}
+          >
+            <Sparkles size={14} style={{ flexShrink: 0 }} />
+            <span>
+              {analysis.handMismatchNotice ||
+                `Observation: Detected ${analysis.detectedHand === 'left' ? 'Left' : 'Right'} Palm. Creases calibrated to your scanned hand.`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Free Preview Insight Snippets */}

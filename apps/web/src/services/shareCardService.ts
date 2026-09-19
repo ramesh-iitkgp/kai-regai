@@ -465,8 +465,12 @@ export async function shareReportCardToWhatsApp({
     const canvas = await generateShareCardCanvas(reading, displayName, imageDataUrl, siteUrl);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
 
-    // Try native Web Share API (Mobile WhatsApp with attached image)
-    if (blob && navigator.canShare && typeof navigator.share === 'function') {
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
+    // Try native Web Share API on mobile devices (iOS/Android) where WhatsApp accepts image file attachments directly
+    if (isMobile && blob && navigator.canShare && typeof navigator.share === 'function') {
       const file = new File([blob], `KaiRegAI_${displayName.replace(/\s+/g, '_')}_Report.png`, {
         type: 'image/png',
       });

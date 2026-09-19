@@ -63,16 +63,24 @@ app.post('/api/v1/sessions', (req: Request, res: Response) => {
 app.post('/api/v1/scans/upload', upload.single('image'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const hand = (req.body.hand as HandType) || 'right';
+    const detectedHand = (req.body.detectedHand as HandType) || hand;
+    const handMismatch = detectedHand !== hand;
     const sessionId = req.body.sessionId || `sess_${uuidv4()}`;
     const qualityScore = parseFloat(req.body.qualityScore || '0.85');
     const scanId = `scan_${uuidv4().substring(0, 8)}`;
 
     const analysis = await PalmAnalysisService.analyzePalmImage(
       scanId,
-      hand,
+      detectedHand || hand,
       qualityScore,
       req.file?.buffer
     );
+    analysis.hand = hand;
+    analysis.detectedHand = detectedHand;
+    analysis.handMismatch = handMismatch;
+    if (handMismatch) {
+      analysis.handMismatchNotice = `Notice: You selected ${hand === 'right' ? 'Right' : 'Left'} Palm, but our vision sensor detected your ${detectedHand === 'right' ? 'Right' : 'Left'} Palm. Lines and mounts have been calibrated to your scanned hand for accuracy.`;
+    }
 
     scansStore.set(scanId, {
       scanId,

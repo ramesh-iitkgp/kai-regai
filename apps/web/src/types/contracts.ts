@@ -53,6 +53,9 @@ export interface StructuredPalmAnalysis {
   detectedTags: string[];
   landmarks?: Point2D[];
   palmBoundary?: string;
+  detectedHand?: HandType;
+  handMismatch?: boolean;
+  handMismatchNotice?: string;
 }
 
 export interface PaymentInitResponse {
